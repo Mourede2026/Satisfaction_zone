@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau de bord admin</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f4c81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{--brand:#0f4c81;}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;margin:0;color:#1f2937}
+  header{background:var(--brand);color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+  header h1{margin:0;font-size:1.1rem}
+  header a{color:#cfe3f7;text-decoration:none;font-size:.85rem}
+  main{max-width:980px;margin:0 auto;padding:16px}
+
+  #loginBox{max-width:340px;margin:60px auto;background:#fff;padding:24px;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.1);text-align:center}
+  #loginBox input{width:100%;padding:12px;border:1px solid #dfe4ea;border-radius:10px;margin:12px 0;font-size:1rem}
+  #loginBox button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--brand);color:#fff;font-weight:600;font-size:1rem;cursor:pointer}
+  #loginError{color:#c0392b;font-size:.85rem;min-height:1.2em}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .kpi{background:#fff;border-radius:14px;padding:18px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .kpi .num{font-size:1.8rem;font-weight:700;color:var(--brand)}
+  .kpi .lbl{font-size:.8rem;color:#6b7280;margin-top:4px}
+
+  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{padding:8px 14px;border-radius:999px;background:#fff;border:1px solid #dfe4ea;font-size:.85rem;cursor:pointer}
+  .tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+  .panel{display:none}
+  .panel.active{display:block}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .card h2{font-size:.95rem;color:var(--brand);margin:0 0 10px}
+  canvas{max-height:340px}
+
+
+  table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef1f4}
+  th{color:#6b7280;font-weight:600}
+
+  #refreshBar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:.8rem;color:#6b7280}
+  #refreshBtn{background:#fff;border:1px solid var(--brand);color:var(--brand);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:.8rem}
+
+  .communeBar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .communeBar label{font-size:.85rem;color:#6b7280;font-weight:600}
+  #communeSelect{flex:1;min-width:220px;padding:12px 14px;border-radius:10px;border:1px solid #dfe4ea;font-size:1rem;background:#fff;color:#1f2937}
+  .subKpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+  .subKpi{background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .subKpi .num{font-size:1.4rem;font-weight:700;color:var(--brand)}
+  .subKpi .lbl{font-size:.72rem;color:#6b7280;margin-top:2px}
+  .infoLine{font-size:.8rem;color:#6b7280;margin-bottom:10px}
+  .emptyNote{font-size:.85rem;color:#9aa5b1;font-style:italic;padding:20px 0;text-align:center}
+  .catCanvasWrap canvas{max-height:none}
+
+  #mapEnqueteurs{height:420px;border-radius:12px;overflow:hidden}
+  .mapBar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .mapBar label{font-size:.85rem;color:#6b7280;font-weight:600}
+  #daySelect{flex:1;min-width:200px;padding:12px 14px;border-radius:10px;border:1px solid #dfe4ea;font-size:1rem;background:#fff;color:#1f2937}
+  .leaflet-popup-content{font-size:.85rem}
+  .leaflet-popup-content b{color:var(--brand)}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<header>
+  <h1>📊 Tableau de bord — Satisfaction Zones Sanitaires</h1>
+  <a href="index.html">Accueil</a>
+</header>
+
+<div id="loginBox">
+  <h2>🔒 Accès administrateur</h2>
+  <input type="password" id="pwdInput" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')login()">
+  <button onclick="login()">Se connecter</button>
+  <div id="loginError"></div>
+</div>
+
+<main id="dashRoot" style="display:none">
+  <div id="refreshBar">
+    <span id="lastUpdate"></span>
+    <button id="refreshBtn" onclick="loadData(false)">🔄 Actualiser</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="num" id="kpiUsagers">–</div><div class="lbl">👩‍👦 Réponses Usagers</div></div>
+    <div class="kpi"><div class="num" id="kpiPersonnels">–</div><div class="lbl">👩‍⚕️ Réponses Personnel</div></div>
+    <div class="kpi"><div class="num" id="kpiCogecs">–</div><div class="lbl">👨‍👩‍👧‍👦 Réponses COGECS</div></div>
+    <div class="kpi"><div class="num" id="kpiTotal">–</div><div class="lbl">📋 Total enregistrements</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-panel="p-commune" onclick="showPanel('p-commune', this)">📍 Par commune</div>
+    <div class="tab" data-panel="p-global" onclick="showPanel('p-global', this)">🌍 Global</div>
+    <div class="tab" data-panel="p-usagers" onclick="showPanel('p-usagers', this)">👩‍👦 Usagers</div>
+    <div class="tab" data-panel="p-personnels" onclick="showPanel('p-personnels', this)">👩‍⚕️ Personnel</div>
+    <div class="tab" data-panel="p-cogecs" onclick="showPanel('p-cogecs', this)">👨‍👩‍👧‍👦 COGECS</div>
+    <div class="tab" data-panel="p-carte" onclick="showPanel('p-carte', this)">🗺️ Enquêteurs</div>
+  </div>
+
+  <div id="p-commune" class="panel active">
+    <div class="card communeBar">
+      <label for="communeSelect">📍 Commune</label>
+      <select id="communeSelect" onchange="renderCommuneView()"><option>Chargement…</option></select>
+    </div>
+
+    <div class="card">
+      <h2>👩‍👦 Usagers — satisfaction par catégorie</h2>
+      <div class="infoLine" id="communeUsagersInfo"></div>
+      <div class="catCanvasWrap"><canvas id="chartCommuneUsagers"></canvas></div>
+      <div class="emptyNote" id="communeUsagersEmpty" style="display:none">Aucune réponse Usagers pour cette commune.</div>
+    </div>
+
+    <div class="card">
+      <h2>👩‍⚕️ Personnel soignant — satisfaction par catégorie</h2>
+      <div class="infoLine" id="communePersonnelsInfo"></div>
+      <div class="catCanvasWrap"><canvas id="chartCommunePersonnels"></canvas></div>
+      <div class="emptyNote" id="communePersonnelsEmpty" style="display:none">Aucune réponse Personnel pour cette commune.</div>
+    </div>
+
+    <div class="card">
+      <h2>👨‍👩‍👧‍👦 COGECS — satisfaction par catégorie</h2>
+      <div class="infoLine" id="communeCogecsInfo"></div>
+      <div class="catCanvasWrap"><canvas id="chartCommuneCogecs"></canvas></div>
+      <div class="emptyNote" id="communeCogecsEmpty" style="display:none">Aucune réponse COGECS pour cette commune.</div>
+    </div>
+  </div>
+
+  <div id="p-global" class="panel">
+    <div class="card">
+      <h2>Comparaison par cible (nombre de réponses et satisfaction)</h2>
+      <canvas id="chartGCible"></canvas>
+    </div>
+    <div class="card">
+      <h2>Enregistrements et satisfaction par commune (toutes cibles confondues)</h2>
+      <canvas id="chartGCommune"></canvas>
+    </div>
+  </div>
+
+  <div id="p-usagers" class="panel">
+    <div class="card">
+      <h2>Enregistrements et satisfaction par commune</h2>
+      <canvas id="chartUCommune"></canvas>
+    </div>
+    <div class="card">
+      <h2>Enregistrements et satisfaction par structure (centre de santé)</h2>
+      <canvas id="chartUStructure"></canvas>
+      <table id="tblUStructure"></table>
+    </div>
+    <div class="card">
+      <h2>Enregistrements par enquêteur</h2>
+      <canvas id="chartUEnqueteur"></canvas>
+    </div>
+  </div>
+
+  <div id="p-personnels" class="panel">
+    <div class="card">
+      <h2>Enregistrements et satisfaction par commune</h2>
+      <canvas id="chartPCommune"></canvas>
+    </div>
+    <div class="card">
+      <h2>Enregistrements et satisfaction par structure</h2>
+      <canvas id="chartPStructure"></canvas>
+      <table id="tblPStructure"></table>
+    </div>
+  </div>
+
+  <div id="p-cogecs" class="panel">
+    <div class="card">
+      <h2>Enregistrements et satisfaction par commune</h2>
+      <canvas id="chartCCommune"></canvas>
+    </div>
+    <div class="card">
+      <h2>Enregistrements et satisfaction par structure</h2>
+      <canvas id="chartCStructure"></canvas>
+      <table id="tblCStructure"></table>
+    </div>
+  </div>
+
+  <div id="p-carte" class="panel">
+    <div class="card mapBar">
+      <label for="daySelect">📅 Jour de collecte</label>
+      <select id="daySelect" onchange="renderCarteEnqueteurs()"><option>Chargement…</option></select>
+    </div>
+    <div class="card">
+      <h2>🗺️ Position des enquêteurs (formulaire Usagers)</h2>
+      <div class="infoLine" id="carteInfo"></div>
+      <div id="mapEnqueteurs"></div>
+      <div class="emptyNote" id="carteEmpty" style="display:none">Aucune position GPS enregistrée pour ce jour.</div>
+    </div>
+    <div class="card">
+      <table id="tblCarteEnqueteurs"></table>
+    </div>
+  </div>
+</main>
+
+<script>
+let pwd = '';
+let charts = {};
+let autoTimer = null;
+
+function login(){
+  pwd = document.getElementById('pwdInput').value;
+  document.getElementById('loginError').textContent = 'Connexion...';
+  callApi('checkAdminPassword', null, pwd)
+    .then(res=>{
+      if (!res || !res.valid){ document.getElementById('loginError').textContent = 'Mot de passe incorrect.'; return; }
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('dashRoot').style.display = 'block';
+      loadData(true);
+      autoTimer = setInterval(()=>loadData(false), 30000); // auto-refresh 30s
+    })
+    .catch(()=>{ document.getElementById('loginError').textContent = 'Erreur de connexion.'; });
+}
+
+function showPanel(id, el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'p-carte' && leafletMap) setTimeout(() => leafletMap.invalidateSize(), 100);
+}
+
+function loadData(first){
+  callApi('getDashboardData', null, pwd)
+    .then(renderData)
+    .catch(()=>{ document.getElementById('lastUpdate').textContent = 'Erreur lors du chargement.'; });
+}
+
+function barChart(canvasId, labels, counts, scores, label1, label2){
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        { type:'bar', label: label1, data: counts, backgroundColor:'#0f4c81', yAxisID:'y' },
+        { type:'line', label: label2, data: scores, borderColor:'#e08e0b', backgroundColor:'#e08e0b', yAxisID:'y1', tension:.3 }
+      ]
+    },
+    options: {
+      responsive:true,
+      interaction:{mode:'index', intersect:false},
+      scales:{
+        y:{ position:'left', beginAtZero:true, title:{display:true,text:'Nb réponses'} },
+        y1:{ position:'right', beginAtZero:true, max:100, grid:{drawOnChartArea:false}, title:{display:true,text:'Satisfaction (%)'} }
+      }
+    }
+  });
+}
+
+function fillTable(tblId, rows){
+  const tbl = document.getElementById(tblId);
+  let html = '<tr><th>Structure</th><th>Nb réponses</th><th>Satisfaction moyenne</th></tr>';
+  rows.forEach(r=>{
+    html += `<tr><td>${r.label}</td><td>${r.count}</td><td>${r.avgScore!==null?r.avgScore+'%':'–'}</td></tr>`;
+  });
+  tbl.innerHTML = html;
+}
+
+function scoreColor(v){
+  if (v === null || v === undefined) return '#c9d0d8';
+  if (v >= 75) return '#1f9d55';
+  if (v >= 50) return '#e08e0b';
+  return '#c0392b';
+}
+
+/** Graphique horizontal : une barre par catégorie, coloriée selon le score */
+function horizontalScoreChart(canvasId, labels, scores){
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const el = document.getElementById(canvasId);
+  el.parentElement.style.height = Math.max(160, labels.length * 34) + 'px';
+  el.style.height = '100%';
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Satisfaction (%)',
+        data: scores,
+        backgroundColor: scores.map(scoreColor),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, max: 100, title: { display: true, text: 'Satisfaction (%)' } },
+        y: { ticks: { autoSkip: false, font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function genderLine(genderPct){
+  const parts = Object.keys(genderPct || {}).map(k => `${k} ${genderPct[k]}%`);
+  return parts.length ? parts.join(' · ') : '';
+}
+
+function renderCommuneCard(cible, canvasId, infoId, emptyId, rec){
+  const canvasWrap = document.getElementById(canvasId).parentElement;
+  const emptyEl = document.getElementById(emptyId);
+  const infoEl = document.getElementById(infoId);
+  if (!rec || rec.count === 0) {
+    canvasWrap.style.display = 'none';
+    emptyEl.style.display = 'block';
+    infoEl.textContent = '';
+    return;
+  }
+  canvasWrap.style.display = 'block';
+  emptyEl.style.display = 'none';
+  let info = `${rec.count} réponse${rec.count>1?'s':''}`;
+  if (rec.avgAge !== null) info += ` · Âge moyen ${rec.avgAge} ans`;
+  const gl = genderLine(rec.genderPct);
+  if (gl) info += ` · ${gl}`;
+  infoEl.textContent = info;
+  const cats = Object.keys(rec.categoryScores);
+  horizontalScoreChart(canvasId, cats, cats.map(c => rec.categoryScores[c]));
+}
+
+function renderCommuneView(){
+  if (!lastData) return;
+  const commune = document.getElementById('communeSelect').value;
+  const cr = lastData.communeReport;
+  renderCommuneCard('usagers', 'chartCommuneUsagers', 'communeUsagersInfo', 'communeUsagersEmpty', cr.usagers.byCommune[commune]);
+  renderCommuneCard('personnels', 'chartCommunePersonnels', 'communePersonnelsInfo', 'communePersonnelsEmpty', cr.personnels.byCommune[commune]);
+  renderCommuneCard('cogecs', 'chartCommuneCogecs', 'communeCogecsInfo', 'communeCogecsEmpty', cr.cogecs.byCommune[commune]);
+}
+
+function populateCommuneSelect(cr){
+  const sel = document.getElementById('communeSelect');
+  const prev = sel.value;
+  const names = new Set();
+  ['usagers','personnels','cogecs'].forEach(k => {
+    Object.keys(cr[k].byCommune).forEach(c => names.add(c));
+  });
+  const sorted = Array.from(names).sort((a,b)=>a.localeCompare(b, 'fr'));
+  sel.innerHTML = sorted.map(c => `<option value="${c}">${c}</option>`).join('');
+  if (sorted.includes(prev)) sel.value = prev;
+}
+
+let lastData = null;
+let leafletMap = null;
+let leafletMarkers = [];
+
+function ensureMap(){
+  if (leafletMap) return leafletMap;
+  leafletMap = L.map('mapEnqueteurs').setView([7.2, 2.0], 10); // centré approx. sur le Zou (Bénin)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(leafletMap);
+  return leafletMap;
+}
+
+function populateDaySelect(gpsByDay){
+  const sel = document.getElementById('daySelect');
+  const prev = sel.value;
+  const days = Object.keys(gpsByDay || {}).sort().reverse(); // plus récent d'abord
+  if (!days.length){
+    sel.innerHTML = '<option value="">Aucune donnée</option>';
+    return;
+  }
+  sel.innerHTML = days.map(d => `<option value="${d}">${d}</option>`).join('');
+  if (days.includes(prev)) sel.value = prev;
+}
+
+function renderCarteEnqueteurs(){
+  if (!lastData) return;
+  const gpsByDay = lastData.gpsByDay || {};
+  const day = document.getElementById('daySelect').value;
+  const points = gpsByDay[day] || [];
+  const mapWrap = document.getElementById('mapEnqueteurs');
+  const emptyEl = document.getElementById('carteEmpty');
+  const infoEl = document.getElementById('carteInfo');
+
+  if (!points.length){
+    mapWrap.style.display = 'none';
+    emptyEl.style.display = 'block';
+    infoEl.textContent = '';
+    document.getElementById('tblCarteEnqueteurs').innerHTML = '';
+    return;
+  }
+  mapWrap.style.display = 'block';
+  emptyEl.style.display = 'none';
+  infoEl.textContent = `${points.length} position${points.length>1?'s':''} enregistrée${points.length>1?'s':''} le ${day}`;
+
+  const map = ensureMap();
+  leafletMarkers.forEach(m => map.removeLayer(m));
+  leafletMarkers = [];
+
+  const bounds = [];
+  points.forEach(p => {
+    const marker = L.marker([p.lat, p.lon]).addTo(map);
+    marker.bindPopup(
+      `<b>${p.enqueteur || 'Enquêteur non renseigné'}</b><br>` +
+      `${p.commune || ''}${p.structure ? ' · ' + p.structure : ''}<br>` +
+      (p.accuracy !== null ? `Précision ~${p.accuracy} m` : 'Précision inconnue')
+    );
+    leafletMarkers.push(marker);
+    bounds.push([p.lat, p.lon]);
+  });
+  if (bounds.length) map.fitBounds(bounds, { padding: [30,30], maxZoom: 16 });
+  setTimeout(() => map.invalidateSize(), 150); // au cas où l'onglet vient d'être affiché
+
+  let html = '<tr><th>Enquêteur</th><th>Commune</th><th>Structure</th><th>Précision</th></tr>';
+  points.forEach(p => {
+    html += `<tr><td>${p.enqueteur || '–'}</td><td>${p.commune || '–'}</td><td>${p.structure || '–'}</td><td>${p.accuracy !== null ? p.accuracy + ' m' : '–'}</td></tr>`;
+  });
+  document.getElementById('tblCarteEnqueteurs').innerHTML = html;
+}
+
+function renderData(d){
+  if (!d || !d.ok){ document.getElementById('lastUpdate').textContent = 'Erreur : ' + (d && d.error || 'inconnue'); return; }
+  lastData = d;
+
+  document.getElementById('kpiUsagers').textContent = d.counts.usagers;
+  document.getElementById('kpiPersonnels').textContent = d.counts.personnels;
+  document.getElementById('kpiCogecs').textContent = d.counts.cogecs;
+  document.getElementById('kpiTotal').textContent = d.counts.total;
+  document.getElementById('lastUpdate').textContent = 'Mis à jour : ' + new Date(d.generatedAt).toLocaleString('fr-FR')
+    + (d.errors && d.errors.length ? '  ⚠️ ' + d.errors.length + ' section(s) indisponible(s)' : '');
+
+  barChart('chartGCible',
+    d.global.byCible.map(r=>r.label), d.global.byCible.map(r=>r.count), d.global.byCible.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  barChart('chartGCommune',
+    d.global.byCommune.map(r=>r.label), d.global.byCommune.map(r=>r.count), d.global.byCommune.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+
+  barChart('chartPCommune',
+    d.personnels.byCommune.map(r=>r.label), d.personnels.byCommune.map(r=>r.count), d.personnels.byCommune.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  barChart('chartPStructure',
+    d.personnels.byStructure.map(r=>r.label), d.personnels.byStructure.map(r=>r.count), d.personnels.byStructure.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  fillTable('tblPStructure', d.personnels.byStructure);
+
+  barChart('chartUCommune',
+    d.usagers.byCommune.map(r=>r.label), d.usagers.byCommune.map(r=>r.count), d.usagers.byCommune.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  barChart('chartUStructure',
+    d.usagers.byStructure.map(r=>r.label), d.usagers.byStructure.map(r=>r.count), d.usagers.byStructure.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  fillTable('tblUStructure', d.usagers.byStructure);
+  barChart('chartUEnqueteur',
+    d.usagers.byEnqueteur.map(r=>r.label), d.usagers.byEnqueteur.map(r=>r.count), d.usagers.byEnqueteur.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+
+  barChart('chartCCommune',
+    d.cogecs.byCommune.map(r=>r.label), d.cogecs.byCommune.map(r=>r.count), d.cogecs.byCommune.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  barChart('chartCStructure',
+    d.cogecs.byStructure.map(r=>r.label), d.cogecs.byStructure.map(r=>r.count), d.cogecs.byStructure.map(r=>r.avgScore),
+    'Réponses', 'Satisfaction (%)');
+  fillTable('tblCStructure', d.cogecs.byStructure);
+
+  populateCommuneSelect(d.communeReport);
+  renderCommuneView();
+
+  populateDaySelect(d.gpsByDay);
+  renderCarteEnqueteurs();
+}
+</script>
+</body>
+</html>
