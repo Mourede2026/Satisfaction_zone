@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquêtes de satisfaction - Zones sanitaires du Bénin</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f4c81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Satisfaction ZS">
+<style>
+  :root{--brand:#0f4c81}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;margin:0;padding:24px;color:#1f2937}
+  h1{font-size:1.3rem;color:var(--brand);margin-bottom:4px;text-align:center}
+  p.sub{color:#6b7280;margin-top:0;text-align:center}
+  .targets{display:grid;gap:16px;margin-top:24px;max-width:520px;margin-left:auto;margin-right:auto}
+  .card{display:block;background:#fff;border-radius:16px;padding:26px 20px;text-decoration:none;color:#1f2937;box-shadow:0 1px 5px rgba(0,0,0,.08);border-left:8px solid var(--brand);text-align:center}
+  .card .emoji{font-size:2.2rem;display:block;margin-bottom:8px}
+  .card h2{margin:0 0 4px;font-size:1.15rem}
+  .card p{margin:0;color:#6b7280;font-size:.9rem}
+  .other{margin-top:36px;text-align:center}
+  .other a{color:#9aa5b1;text-decoration:underline;font-size:.8rem;margin:0 8px}
+</style>
+</head>
+<body>
+  <h1>🎯 Cible à enquêter</h1>
+  <p class="sub">Choisissez le type de personne interrogée</p>
+
+  <div class="targets">
+    <a class="card" href="usagers.html">
+      <span class="emoji">👩‍👦</span>
+      <h2>Usagers (patients)</h2>
+      <p>Questionnaire de satisfaction des usagers des centres de santé</p>
+    </a>
+
+    <a class="card" href="cogecs.html">
+      <span class="emoji">👨‍👩‍👧‍👦</span>
+      <h2>Membre COGECS</h2>
+      <p>Questionnaire de satisfaction des membres du COGECS</p>
+    </a>
+  </div>
+
+  <div class="other">
+    <a href="personnels.html">👩‍⚕️ Formulaire personnel soignant</a>
+    ·
+    <a href="admin.html">📊 Tableau de bord admin</a>
+  </div>
+</body>
+</html>
