@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personnel soignant</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f4c81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Personnel">
+<style>
+  :root{--brand:#0f4c81;--brand-light:#e8f0f8;--ok:#1a9e5c;--danger:#c0392b;--nav-back:#e74c3c;--nav-next:#27ae60;}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0;color:#1f2937}
+  header{background:var(--brand);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:1.15rem}
+  header .back{color:#cfe3f7;text-decoration:none;font-size:.85rem}
+  #status-banner{padding:8px 16px;font-size:.85rem;text-align:center;display:none}
+  #status-banner.offline{display:block;background:#fdecea;color:#c0392b}
+  #status-banner.queued{display:block;background:#fff8e1;color:#8a6d00}
+  main{max-width:640px;margin:0 auto;padding:16px;padding-bottom:200px}
+  .progress{font-size:.78rem;color:#6b7280;text-align:center;margin-bottom:12px;font-weight:600}
+  .group{background:#fff;border-radius:14px;padding:16px;margin:14px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .group h2{font-size:.95rem;color:var(--brand);margin:0 0 12px;border-bottom:1px solid #eef1f4;padding-bottom:8px}
+  .field{margin-bottom:16px}
+  .field label.qlabel{display:block;font-size:.92rem;font-weight:600;margin-bottom:8px;line-height:1.35}
+  .req{color:var(--danger)}
+  .options{display:flex;flex-direction:column;gap:6px}
+  .opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #dfe4ea;border-radius:10px;cursor:pointer;font-size:.9rem}
+  .opt input{accent-color:var(--brand)}
+  .opt.selected{border-color:var(--brand);background:var(--brand-light)}
+  select, input[type=text], input[type=number], textarea{width:100%;padding:10px;border:1px solid #dfe4ea;border-radius:10px;font-size:.95rem;font-family:inherit}
+  .hint{font-size:.78rem;color:#6b7280;margin-top:4px}
+  textarea{min-height:70px;resize:vertical}
+  .hidden{display:none !important}
+  .gps-status{padding:12px;border-radius:10px;font-size:.9rem;margin:12px 0;text-align:center;font-weight:600}
+  .gps-status.gps-ok{background:#e7f7ee;color:#1a9e5c}
+  .gps-status.gps-pending{background:#fff8e1;color:#8a6d00}
+  .gps-status.gps-missing{background:#fdecea;color:#c0392b}
+  .gps-btn{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:14px;font-size:1rem;font-weight:600;width:100%;cursor:pointer}
+  .nav-bar{position:fixed;left:0;right:0;bottom:0;background:#f4f6f8;border-top:1px solid #e2e6ea;padding:12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);z-index:20}
+  .nav-inner{max-width:640px;margin:0 auto}
+  .error-msg{color:var(--danger);font-size:.85rem;margin-bottom:8px;display:none;text-align:center}
+  .nav-buttons{display:flex;gap:10px}
+  .btn-back,.btn-next{flex:1;width:auto;padding:14px;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
+  .btn-back{background:var(--nav-back);color:var(--brand)}
+  .btn-next{background:var(--nav-next);color:var(--brand)}
+  .btn-back:disabled,.btn-next:disabled{opacity:.5;cursor:default}
+  .btn-back.invisible{visibility:hidden}
+  .sync-row{text-align:center;margin-top:8px}
+  .sync-row button{background:none;border:none;color:var(--brand);font-size:.8rem;text-decoration:underline;cursor:pointer;padding:4px}
+  .toast{position:fixed;left:16px;right:16px;bottom:100px;background:#1f2937;color:#fff;padding:14px;border-radius:12px;text-align:center;display:none;z-index:50}
+  .queue-count{background:#8a6d00;color:#fff;border-radius:999px;padding:1px 8px;font-size:.75rem;margin-left:6px}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">&larr; Retour</a>
+  <h1>👩‍⚕️ Personnel soignant</h1>
+</header>
+<div id="status-banner"></div>
+<main>
+  <div class="progress" id="progressLabel"></div>
+  <form id="mainForm" onsubmit="return false;">
+    <div id="fieldsRoot"></div>
+  </form>
+</main>
+<div class="nav-bar">
+  <div class="nav-inner">
+    <div class="error-msg" id="errorMsg">Merci de répondre à toutes les questions obligatoires (surlignées).</div>
+    <div class="nav-buttons">
+      <button type="button" id="backBtn" class="btn-back" onclick="goBack()">← Retour</button>
+      <button type="button" id="nextBtn" class="btn-next" onclick="goNext()">Suivant →</button>
+    </div>
+    <div class="sync-row">
+      <button type="button" onclick="syncQueue(true)">🔄 Synchroniser les réponses en attente <span class="queue-count" id="qCount" style="display:none"></span></button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const FORM_KEY = "personnels";
+const SUBMIT_FN = "submitPersonnels";
+const SCHEMA = [{"column": "Âge", "label": "Âge", "type": "integer", "required": true, "group": "📝 Profil", "min": 18, "max": 99}, {"column": "Sexe", "label": "Sexe", "type": "radio", "options": ["Masculin", "Féminin"], "required": true, "group": "📝 Profil"}, {"column": "Niveau de scolarité", "label": "Niveau de scolarité", "type": "radio", "options": ["Non scolarisé", "Alphabétisé", "Primaire", "Secondaire", "Universitaire"], "required": true, "group": "📝 Profil"}, {"column": "Les équipements nécessaires à l’exercice de vos fonctions sont disponibles en quantité suffisante.", "label": "Les équipements nécessaires à l’exercice de vos fonctions sont disponibles en quantité suffisante.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🏥 Conditions de travail"}, {"column": "Les infrastructures de votre centre de santé sont adaptées à une prestation de qualité.", "label": "Les infrastructures de votre centre de santé sont adaptées à une prestation de qualité.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🏥 Conditions de travail"}, {"column": "Vous disposez des consommables médicaux requis pour assurer les soins courants.", "label": "Vous disposez des consommables médicaux requis pour assurer les soins courants.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🏥 Conditions de travail"}, {"column": "La répartition des tâches est équitable entre les membres du personnel.", "label": "La répartition des tâches est équitable entre les membres du personnel.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🏥 Conditions de travail"}, {"column": "Vous êtes régulièrement sollicité(e) pour des activités non médicales (réunions, etc.).", "label": "Vous êtes régulièrement sollicité(e) pour des activités non médicales (réunions, etc.).", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🏥 Conditions de travail"}, {"column": "Le volume de travail quotidien est compatible avec une prise en charge de qualité.", "label": "Le volume de travail quotidien est compatible avec une prise en charge de qualité.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🏥 Conditions de travail"}, {"column": "Vous vous sentez valorisé(e) dans votre rôle au sein du centre de santé.", "label": "Vous vous sentez valorisé(e) dans votre rôle au sein du centre de santé.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🙌 Reconnaissance et évolution"}, {"column": "Vous avez des perspectives d’évolution professionnelle dans la zone sanitaire.", "label": "Vous avez des perspectives d’évolution professionnelle dans la zone sanitaire.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🙌 Reconnaissance et évolution"}, {"column": "Vous êtes satisfait(e) de la reconnaissance institutionnelle accordée à votre travail.", "label": "Vous êtes satisfait(e) de la reconnaissance institutionnelle accordée à votre travail.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🙌 Reconnaissance et évolution"}, {"column": "Les relations entre collègues sont basées sur le respect et la coopération.", "label": "Les relations entre collègues sont basées sur le respect et la coopération.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🤝 Relations professionnelles"}, {"column": "Vous pouvez compter sur le soutien de vos collègues en cas de difficulté professionnelle.", "label": "Vous pouvez compter sur le soutien de vos collègues en cas de difficulté professionnelle.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🤝 Relations professionnelles"}, {"column": "Les conflits internes sont gérés de manière constructive.", "label": "Les conflits internes sont gérés de manière constructive.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🤝 Relations professionnelles"}, {"column": "Les protocoles techniques sont facilement accessibles dans votre centre.", "label": "Les protocoles techniques sont facilement accessibles dans votre centre.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "📋 Communication et directives"}, {"column": "Les directives du Bureau de Zone Sanitaire sont claires et bien communiquées.", "label": "Les directives du Bureau de Zone Sanitaire sont claires et bien communiquées.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "📋 Communication et directives"}, {"column": "Vous êtes informé(e) en temps utile des décisions qui vous concernent.", "label": "Vous êtes informé(e) en temps utile des décisions qui vous concernent.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "📋 Communication et directives"}, {"column": "Vous avez accès à des outils pour sensibiliser les patients à leurs droits et devoirs.", "label": "Vous avez accès à des outils pour sensibiliser les patients à leurs droits et devoirs.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "📋 Communication et directives"}, {"column": "Vos collègues maîtrisent les gestes techniques requis pour leur fonction.", "label": "Vos collègues maîtrisent les gestes techniques requis pour leur fonction.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "👥 Qualité de l’équipe"}, {"column": "Vous avez confiance dans la qualité du travail accompli par votre équipe.", "label": "Vous avez confiance dans la qualité du travail accompli par votre équipe.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "👥 Qualité de l’équipe"}, {"column": "Les erreurs professionnelles sont rares dans votre environnement de travail.", "label": "Les erreurs professionnelles sont rares dans votre environnement de travail.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "👥 Qualité de l’équipe"}, {"column": "Vous bénéficiez de supervisions régulières et utiles.", "label": "Vous bénéficiez de supervisions régulières et utiles.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🏫 Supervision"}, {"column": "Les encadreurs zonaux sont disponibles pour répondre à vos besoins techniques.", "label": "Les encadreurs zonaux sont disponibles pour répondre à vos besoins techniques.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🏫 Supervision"}, {"column": "Les supervisions contribuent à améliorer vos compétences professionnelles.", "label": "Les supervisions contribuent à améliorer vos compétences professionnelles.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🏫 Supervision"}, {"column": "Les décisions du Bureau de Zone Sanitaire sont perçues comme justes.", "label": "Les décisions du Bureau de Zone Sanitaire sont perçues comme justes.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "⚖️ Gestion RH"}, {"column": "Les affectations du personnel sont faites de manière équitable et transparente.", "label": "Les affectations du personnel sont faites de manière équitable et transparente.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "⚖️ Gestion RH"}, {"column": "Les formations sont attribuées selon des critères clairs et objectifs.", "label": "Les formations sont attribuées selon des critères clairs et objectifs.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "⚖️ Gestion RH"}, {"column": "Vous avez été informé(e) de l’existence de la Charte des droits et devoirs des patients.", "label": "Vous avez été informé(e) de l’existence de la Charte des droits et devoirs des patients.", "type": "radio", "options": ["Oui", "Non", "Partiellement"], "required": true, "group": "📜 Charte des droits des patients"}, {"column": "Vous avez lu ou reçu une formation sur son contenu.", "label": "Vous avez lu ou reçu une formation sur son contenu.", "type": "radio", "options": ["Oui", "Non", "Partiellement"], "required": true, "group": "📜 Charte des droits des patients"}, {"column": "La Charte est affichée dans votre centre de santé.", "label": "La Charte est affichée dans votre centre de santé.", "type": "radio", "options": ["Oui", "Non"], "required": true, "group": "📜 Charte des droits des patients"}, {"column": "Vous vous sentez suffisamment outillé(e) pour appliquer ses principes.", "label": "Vous vous sentez suffisamment outillé(e) pour appliquer ses principes.", "type": "radio", "options": ["Pas du tout", "Peu", "Moyennement", "Bien", "Très bien"], "required": true, "group": "📜 Charte des droits des patients"}, {"column": "Selon vous, les patients sont informés de leurs droits et devoirs.", "label": "Selon vous, les patients sont informés de leurs droits et devoirs.", "type": "radio", "options": ["Oui", "Non", "Partiellement"], "required": true, "group": "📜 Charte des droits des patients"}, {"column": "Vous veillez à obtenir le consentement libre et éclairé du patient avant tout acte médical.", "label": "Vous veillez à obtenir le consentement libre et éclairé du patient avant tout acte médical.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Vous respectez la confidentialité des informations médicales.", "label": "Vous respectez la confidentialité des informations médicales.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Vous adaptez votre comportement pour respecter la dignité et les croyances du patient.", "label": "Vous adaptez votre comportement pour respecter la dignité et les croyances du patient.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Vous contribuez à une prise en charge équitable, sans discrimination.", "label": "Vous contribuez à une prise en charge équitable, sans discrimination.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Votre hiérarchie vous encourage à respecter les droits des patients.", "label": "Votre hiérarchie vous encourage à respecter les droits des patients.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Vous avez reçu des directives claires sur l’application de la Charte.", "label": "Vous avez reçu des directives claires sur l’application de la Charte.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Votre hiérarchie veille à ce que les patients soient informés de leurs droits.", "label": "Votre hiérarchie veille à ce que les patients soient informés de leurs droits.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🫱 Respect des droits du patient"}, {"column": "Le COGECS participe activement au fonctionnement du centre de santé.", "label": "Le COGECS participe activement au fonctionnement du centre de santé.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🤝‍🧑 Collaboration avec le COGECS"}, {"column": "Des réunions sont régulièrement tenues entre le personnel et le COGECS.", "label": "Des réunions sont régulièrement tenues entre le personnel et le COGECS.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🤝‍🧑 Collaboration avec le COGECS"}, {"column": "La collaboration entre les agents de santé et les membres du COGECS", "label": "La collaboration entre les agents de santé et les membres du COGECS", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🤝‍🧑 Collaboration avec le COGECS"}, {"column": "Le COGECS contribue à la gestion des conflits entre les patients et le personnel de santé.", "label": "Le COGECS contribue à la gestion des conflits entre les patients et le personnel de santé.", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🤝‍🧑 Collaboration avec le COGECS"}, {"column": "Le COGECS mène des activités de sensibilisation dans la communauté (droits des patients, vaccination, hygiène, etc.).", "label": "Le COGECS mène des activités de sensibilisation dans la communauté (droits des patients, vaccination, hygiène, etc.).", "type": "radio", "options": ["Pas du tout d’accord", "Peu d’accord", "Neutre", "D’accord", "Tout à fait d’accord"], "required": true, "group": "🧑‍🤝‍🧑 Collaboration avec le COGECS"}];
+const HAS_ENQUETEUR = false;
+const HAS_GEO_TECH = false;
+const HAS_START_END = true;
+const ENQUETEURS = [{"name": "enqu_teur_1", "label": "Enquêteur 1"}, {"name": "enqu_teur_2", "label": "Enquêteur 2"}, {"name": "enqu_teur_3", "label": "Enquêteur 3"}, {"name": "enqu_teur_4", "label": "Enquêteur 4"}, {"name": "enqu_teur_5", "label": "Enquêteur 5"}, {"name": "enqu_teur_6", "label": "Enquêteur 6"}, {"name": "enqu_teur_7", "label": "Enquêteur 7"}, {"name": "enqu_teur_8", "label": "Enquêteur 8"}, {"name": "enqu_teur_9", "label": "Enquêteur 9"}, {"name": "enqu_teur_10", "label": "Enquêteur 10"}, {"name": "enqu_teur_11", "label": "Enquêteur 11"}, {"name": "enqu_teur_12", "label": "Enquêteur 12"}, {"name": "enqu_teur_13", "label": "Enquêteur 13"}, {"name": "enqu_teur_14", "label": "Enquêteur 14"}, {"name": "enqu_teur_15", "label": "Enquêteur 15"}];
+const COMMUNES = [{"name": "abomey", "label": "Abomey"}, {"name": "agbangnizoun", "label": "Agbangnizoun"}, {"name": "djidja", "label": "Djidja"}, {"name": "bohicon", "label": "Bohicon"}, {"name": "zakpota", "label": "Za-Kpota"}, {"name": "zogbodomey", "label": "Zogbodomey"}, {"name": "cove", "label": "Covè"}, {"name": "zagnanado", "label": "Zagnanado"}, {"name": "ouinhi", "label": "Ouinhi"}];
+const ARRONDS = [{"name": "agbokpa", "label": "Agbokpa", "commune": "abomey"}, {"name": "detohou", "label": "Detohou", "commune": "abomey"}, {"name": "djegbe", "label": "Djegbe", "commune": "abomey"}, {"name": "hounli", "label": "Hounli", "commune": "abomey"}, {"name": "sehoun", "label": "Sehoun", "commune": "abomey"}, {"name": "vidole", "label": "Vidole", "commune": "abomey"}, {"name": "zounzounme", "label": "Zounzounme", "commune": "abomey"}, {"name": "adanhondjigon", "label": "Adanhondjigon", "commune": "agbangnizoun"}, {"name": "adingningon", "label": "Adingningon", "commune": "agbangnizoun"}, {"name": "agz", "label": "Agbangnizoun", "commune": "agbangnizoun"}, {"name": "kinta", "label": "Kinta", "commune": "agbangnizoun"}, {"name": "kpota", "label": "Kpota", "commune": "agbangnizoun"}, {"name": "lissazounme", "label": "Lissazounme", "commune": "agbangnizoun"}, {"name": "sahe", "label": "Sahe", "commune": "agbangnizoun"}, {"name": "sinwe", "label": "Sinwe", "commune": "agbangnizoun"}, {"name": "tanve", "label": "Tanvè", "commune": "agbangnizoun"}, {"name": "zoungoudo", "label": "Zoungoudo", "commune": "agbangnizoun"}, {"name": "agondji", "label": "Agondji", "commune": "djidja"}, {"name": "agouna", "label": "Agouna", "commune": "djidja"}, {"name": "dan", "label": "Dan", "commune": "djidja"}, {"name": "djidjacentre", "label": "Djidja centre", "commune": "djidja"}, {"name": "dohouime", "label": "Dohouime", "commune": "djidja"}, {"name": "gobaix", "label": "Gobaix", "commune": "djidja"}, {"name": "houto", "label": "Houto", "commune": "djidja"}, {"name": "monsourou", "label": "Monsourou", "commune": "djidja"}, {"name": "mougnon", "label": "Mougnon", "commune": "djidja"}, {"name": "oungbegame", "label": "Oungbegame", "commune": "djidja"}, {"name": "setto", "label": "Setto", "commune": "djidja"}, {"name": "zounkon", "label": "Zounkon", "commune": "djidja"}, {"name": "sodohome", "label": "Sodohome", "commune": "bohicon"}, {"name": "saclo", "label": "Saclo", "commune": "bohicon"}, {"name": "gnidjazoun", "label": "Gnidjazoun", "commune": "bohicon"}, {"name": "bohicon2", "label": "Bohicon 2", "commune": "bohicon"}, {"name": "lissezoun", "label": "Lissèzoun", "commune": "bohicon"}, {"name": "ouassaho", "label": "Ouassaho", "commune": "bohicon"}, {"name": "bohicon1", "label": "Bohicon 1", "commune": "bohicon"}, {"name": "passagon", "label": "Passagon", "commune": "bohicon"}, {"name": "avogbanna", "label": "Avogbanna", "commune": "bohicon"}, {"name": "agongointo", "label": "Agongointo", "commune": "bohicon"}, {"name": "zakpotac", "label": "Za-Kpota", "commune": "zakpota"}, {"name": "allahe", "label": "Allahé", "commune": "zakpota"}, {"name": "zatanta", "label": "Za-Tanta", "commune": "zakpota"}, {"name": "zakpakpame", "label": "Za-Kpakpamè", "commune": "zakpota"}, {"name": "kpozoun", "label": "Kpozoun", "commune": "zakpota"}, {"name": "houngome", "label": "Houngomè", "commune": "zakpota"}, {"name": "assanlin", "label": "Assanlin", "commune": "zakpota"}, {"name": "zeko", "label": "Zeko", "commune": "zakpota"}, {"name": "koussoukpa", "label": "Koussoukpa", "commune": "zogbodomey"}, {"name": "kpokissa", "label": "Kpokissa", "commune": "zogbodomey"}, {"name": "massi", "label": "Massi", "commune": "zogbodomey"}, {"name": "cana2", "label": "Cana 2", "commune": "zogbodomey"}, {"name": "zogbodomey", "label": "Zogbodomey", "commune": "zogbodomey"}, {"name": "tanwehessou", "label": "Tanwé Hessou", "commune": "zogbodomey"}, {"name": "akiza", "label": "Akiza", "commune": "zogbodomey"}, {"name": "avlame", "label": "Avlamè", "commune": "zogbodomey"}, {"name": "dome", "label": "Domè", "commune": "zogbodomey"}, {"name": "zoukou", "label": "Zoukou", "commune": "zogbodomey"}, {"name": "houinhounso", "label": "Houin-Hounso", "commune": "cove"}, {"name": "houeko", "label": "Houêko", "commune": "cove"}, {"name": "laintacogbe", "label": "Laïnta-Cogbé", "commune": "cove"}, {"name": "naogon", "label": "Naogon", "commune": "cove"}, {"name": "agonli", "label": "Agonli-Houegbo", "commune": "zagnanado"}, {"name": "baname", "label": "Baname", "commune": "zagnanado"}, {"name": "dontan", "label": "Don-Tan", "commune": "zagnanado"}, {"name": "dovi", "label": "Dovi", "commune": "zagnanado"}, {"name": "kpedekpo", "label": "Kpedekpo", "commune": "zagnanado"}, {"name": "zagnanadoc", "label": "Zagnanado Centre", "commune": "zagnanado"}, {"name": "dasso", "label": "Dasso", "commune": "ouinhi"}, {"name": "ouinhiar", "label": "Ouinhi", "commune": "ouinhi"}, {"name": "sagon", "label": "Sagon", "commune": "ouinhi"}, {"name": "tohoues", "label": "Tohoues", "commune": "ouinhi"}];
+const STRUCTS = [{"name": "cs1", "label": "CS Agbokpa", "arrondissement": "agbokpa"}, {"name": "cs2", "label": "CS Detohou", "arrondissement": "detohou"}, {"name": "cs3", "label": "CS Tangandji", "arrondissement": "detohou"}, {"name": "cs4", "label": "CS Djegbe (Abomey)", "arrondissement": "djegbe"}, {"name": "cs5", "label": "CS Hounli", "arrondissement": "hounli"}, {"name": "cs6", "label": "CS Sehoun", "arrondissement": "sehoun"}, {"name": "cs7", "label": "CS Adandokpodji", "arrondissement": "vidole"}, {"name": "cs8", "label": "CS Vidole", "arrondissement": "vidole"}, {"name": "cs9", "label": "CS Zounzonme", "arrondissement": "zounzounme"}, {"name": "cs10", "label": "CS Adanhondjigon", "arrondissement": "adanhondjigon"}, {"name": "cs11", "label": "CS Adingnigon", "arrondissement": "adingningon"}, {"name": "cs12", "label": "CS Agbangnizoun", "arrondissement": "agz"}, {"name": "cs13", "label": "CS Kinta", "arrondissement": "kinta"}, {"name": "cs14", "label": "CS Akodébakou", "arrondissement": "kpota"}, {"name": "cs15", "label": "MI Sinwe-Kpota", "arrondissement": "kpota"}, {"name": "cs16", "label": "CS Lissazounme", "arrondissement": "lissazounme"}, {"name": "cs17", "label": "CS Dovota", "arrondissement": "sahe"}, {"name": "cs18", "label": "CS Sahè", "arrondissement": "sahe"}, {"name": "cs19", "label": "CS Sinwe", "arrondissement": "sinwe"}, {"name": "cs20", "label": "CS Tanve", "arrondissement": "tanve"}, {"name": "cs21", "label": "CS Kpoto", "arrondissement": "zoungoudo"}, {"name": "cs22", "label": "CS Agondji", "arrondissement": "agondji"}, {"name": "cs23", "label": "CS Agouna", "arrondissement": "agouna"}, {"name": "cs24", "label": "CS Dan", "arrondissement": "dan"}, {"name": "cs25", "label": "CS Djidja", "arrondissement": "djidjacentre"}, {"name": "cs26", "label": "CS Dohouime", "arrondissement": "dohouime"}, {"name": "cs27", "label": "CS Gobaix", "arrondissement": "gobaix"}, {"name": "cs28", "label": "CS Outo", "arrondissement": "houto"}, {"name": "cs29", "label": "CS Lobeta", "arrondissement": "monsourou"}, {"name": "cs30", "label": "CS Monsourou", "arrondissement": "monsourou"}, {"name": "cs31", "label": "CS Mougnon", "arrondissement": "mougnon"}, {"name": "cs32", "label": "CS Oumgbega", "arrondissement": "oungbegame"}, {"name": "cs33", "label": "CS Saloudji", "arrondissement": "setto"}, {"name": "cs34", "label": "CS Setto", "arrondissement": "setto"}, {"name": "cs35", "label": "CS Ayogbé", "arrondissement": "zounkon"}, {"name": "cs36", "label": "CS Sodohomè", "arrondissement": "sodohome"}, {"name": "cs37", "label": "CS Saclo", "arrondissement": "saclo"}, {"name": "cs38", "label": "CS Gnidjazoun", "arrondissement": "gnidjazoun"}, {"name": "cs39", "label": "CS Bohicon 2", "arrondissement": "bohicon2"}, {"name": "cs40", "label": "Cs Lissèzoun", "arrondissement": "lissezoun"}, {"name": "cs41", "label": "CS Ouassaho", "arrondissement": "ouassaho"}, {"name": "cs42", "label": "CS Bohicon 1", "arrondissement": "bohicon1"}, {"name": "cs43", "label": "CS Passagon", "arrondissement": "passagon"}, {"name": "cs44", "label": "CS Avogbanna", "arrondissement": "avogbanna"}, {"name": "cs45", "label": "CS Agongointo", "arrondissement": "agongointo"}, {"name": "cs46", "label": "CS Adjinagon", "arrondissement": "zakpotac"}, {"name": "cs47", "label": "CS Za-kpota", "arrondissement": "zakpotac"}, {"name": "cs48", "label": "CS Allahé", "arrondissement": "allahe"}, {"name": "cs49", "label": "MI Za-Hla", "arrondissement": "allahe"}, {"name": "cs50", "label": "CS Za-Tanta", "arrondissement": "zatanta"}, {"name": "cs51", "label": "CS Kpakpamè", "arrondissement": "zakpakpame"}, {"name": "cs52", "label": "CS Kpozoun", "arrondissement": "kpozoun"}, {"name": "cs53", "label": "CS Houngomè", "arrondissement": "houngome"}, {"name": "cs54", "label": "CS Assanlin", "arrondissement": "assanlin"}, {"name": "cs55", "label": "CS kpolokoué", "arrondissement": "assanlin"}, {"name": "cs56", "label": "CS zounzounmè", "arrondissement": "assanlin"}, {"name": "cs57", "label": "CS Tindji", "arrondissement": "zeko"}, {"name": "cs58", "label": "CS Deme", "arrondissement": "koussoukpa"}, {"name": "cs59", "label": "CS Koussoukpa", "arrondissement": "koussoukpa"}, {"name": "cs60", "label": "CS Kpokissa", "arrondissement": "kpokissa"}, {"name": "cs61", "label": "CS Massi", "arrondissement": "massi"}, {"name": "cs62", "label": "CS Cana 2", "arrondissement": "cana2"}, {"name": "cs63", "label": "CS Zogbodome", "arrondissement": "zogbodomey"}, {"name": "cs64", "label": "MI Zoungbo-Bogon", "arrondissement": "zogbodomey"}, {"name": "cs65", "label": "CS Tanwé hessou", "arrondissement": "tanwehessou"}, {"name": "cs66", "label": "CS Akiza", "arrondissement": "akiza"}, {"name": "cs67", "label": "CS Avlamè", "arrondissement": "avlame"}, {"name": "cs68", "label": "CS Domè", "arrondissement": "dome"}, {"name": "cs69", "label": "CS Zoukou", "arrondissement": "zoukou"}, {"name": "cs70", "label": "CS Houin-Hounso", "arrondissement": "houinhounso"}, {"name": "cs71", "label": "CS Covè", "arrondissement": "houeko"}, {"name": "cs72", "label": "CS Lainta Cogbé", "arrondissement": "laintacogbe"}, {"name": "cs73", "label": "CS Naogon", "arrondissement": "naogon"}, {"name": "cs74", "label": "CS Agonlin-Houegbo", "arrondissement": "agonli"}, {"name": "cs75", "label": "CS Baname", "arrondissement": "baname"}, {"name": "cs76", "label": "CS Zakoumado", "arrondissement": "baname"}, {"name": "cs77", "label": "MI Gossoé", "arrondissement": "baname"}, {"name": "cs78", "label": "CS Don-Tan", "arrondissement": "dontan"}, {"name": "cs79", "label": "CS Dovi-Dove", "arrondissement": "dovi"}, {"name": "cs80", "label": "MI Dovi Zounnou", "arrondissement": "dovi"}, {"name": "cs81", "label": "CS Kpedekpo", "arrondissement": "kpedekpo"}, {"name": "cs82", "label": "CS Zagnannado", "arrondissement": "zagnanadoc"}, {"name": "cs83", "label": "CS Dasso", "arrondissement": "dasso"}, {"name": "cs84", "label": "CS Ouinhi", "arrondissement": "ouinhiar"}, {"name": "cs85", "label": "CS Aïzè", "arrondissement": "sagon"}, {"name": "cs86", "label": "CS Sagon", "arrondissement": "sagon"}, {"name": "cs87", "label": "MI Houédja", "arrondissement": "sagon"}, {"name": "cs88", "label": "MI Tévêdji", "arrondissement": "sagon"}, {"name": "cs89", "label": "CS Tohoues", "arrondissement": "tohoues"}, {"name": "cs90", "label": "MI Akassa", "arrondissement": "tohoues"}];
+const QUEUE_KEY = "queue_" + FORM_KEY;
+
+let currentAnswers = {};
+let startTime = new Date();
+
+function normId(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]/g,'_'); }
+
+function fieldId(f, idx){ return 'f_' + idx + '_' + normId(f.column).slice(0,40); }
+
+function renderOptions(f, idx){
+  const name = fieldId(f, idx);
+  let html = '<div class="options">';
+  f.options.forEach((opt, oi) => {
+    const optId = name + '_' + oi;
+    html += `<label class="opt" id="${optId}_wrap" for="${optId}">
+      <input type="radio" id="${optId}" name="${name}" value="${escapeHtml(opt)}" onchange="onFieldChange('${f.column.replace(/'/g,"\\'")}','${f.key||''}', this.value, '${optId}_wrap', '${name}')">
+      <span>${escapeHtml(opt)}</span>
+    </label>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderField(f, idx){
+  const name = fieldId(f, idx);
+  let inner = '';
+  if (f.type === 'radio'){
+    inner = renderOptions(f, idx);
+  } else if (f.type === 'text'){
+    inner = `<input type="text" id="${name}" oninput="onTextChange('${f.column.replace(/'/g,"\\'")}', this.value)">`;
+  } else if (f.type === 'textarea'){
+    inner = `<textarea id="${name}" oninput="onTextChange('${f.column.replace(/'/g,"\\'")}', this.value)"></textarea>`;
+  } else if (f.type === 'integer'){
+    const minAttr = (f.min!==undefined) ? ` min="${f.min}"` : '';
+    const maxAttr = (f.max!==undefined) ? ` max="${f.max}"` : '';
+    inner = `<input type="number" inputmode="numeric" id="${name}"${minAttr}${maxAttr} oninput="onIntChange('${f.column.replace(/'/g,"\\'")}', this.value, ${f.min!==undefined?f.min:'null'}, ${f.max!==undefined?f.max:'null'}, '${name}')">`;
+    if (f.min!==undefined && f.max!==undefined){
+      inner += `<div class="hint">Entre ${f.min} et ${f.max} ans</div>`;
+    }
+  }
+  const reqStar = f.required ? '<span class="req"> *</span>' : '';
+  return `<div class="field" id="wrap_${name}" data-relevant='${f.relevant?JSON.stringify(f.relevant):''}'>
+    <label class="qlabel">${escapeHtml(f.label)}${reqStar}</label>
+    ${inner}
+  </div>`;
+}
+
+function onTextChange(column, value){
+  currentAnswers[column] = value;
+}
+
+let intRangeErrors = {};
+function onIntChange(column, value, min, max, inputId){
+  currentAnswers[column] = value;
+  const el = document.getElementById(inputId);
+  const n = parseInt(value, 10);
+  let bad = false;
+  if (value === '') bad = false; // handled by required check separately
+  else if (min !== null && max !== null && (isNaN(n) || n < min || n > max)) bad = true;
+  intRangeErrors[column] = bad;
+  if (el) el.style.borderColor = bad ? '#c0392b' : '#dfe4ea';
+}
+
+function onFieldChange(column, key, value, wrapId, groupName){
+  currentAnswers[column] = value;
+  if (key) currentAnswers['__key_' + key] = value;
+  // visual highlight
+  document.querySelectorAll(`input[name="${groupName}"]`).forEach(inp=>{
+    document.getElementById(inp.id + '_wrap').classList.toggle('selected', inp.checked);
+  });
+  recomputeVisibility();
+}
+
+function recomputeVisibility(){
+  document.querySelectorAll('[data-relevant]').forEach(el=>{
+    const rel = el.getAttribute('data-relevant');
+    if (!rel) return;
+    const cond = JSON.parse(rel);
+    const val = currentAnswers['__key_' + cond.field];
+    const show = (val === cond.equals);
+    el.classList.toggle('hidden', !show);
+  });
+}
+
+function renderCascading(){
+  // Commune / Arrondissement / Structure — toujours en premier
+  let html = `<div class="group"><h2>📍 Coordonnées de l'enquête</h2>`;
+  if (HAS_ENQUETEUR){
+    html += `<div class="field"><label class="qlabel">Identification de l'enquêteur<span class="req"> *</span></label>
+      <select id="sel_enqueteur" onchange="setEnqueteur(this.value)">
+      <option value="">-- Choisir --</option>` +
+      ENQUETEURS.map(e=>`<option value="${escapeHtml(e.label)}">${escapeHtml(e.label)}</option>`).join('') +
+      `</select></div>`;
+  }
+  html += `<div class="field"><label class="qlabel">Commune<span class="req"> *</span></label>
+    <select id="sel_commune" onchange="onCommuneChange(this.value)">
+    <option value="">-- Choisir --</option>` +
+    COMMUNES.map(c=>`<option value="${escapeHtml(c.label)}" data-name="${c.name}">${escapeHtml(c.label)}</option>`).join('') +
+    `</select></div>`;
+  html += `<div class="field"><label class="qlabel">Arrondissement<span class="req"> *</span></label>
+    <select id="sel_arrond" onchange="onArrondChange(this.value)"><option value="">-- Choisir la commune d'abord --</option></select></div>`;
+  html += `<div class="field"><label class="qlabel">Structure<span class="req"> *</span></label>
+    <select id="sel_structure" onchange="currentAnswers['Structure']=this.value"><option value="">-- Choisir l'arrondissement d'abord --</option></select></div>`;
+  html += `</div>`;
+  return html;
+}
+
+function setEnqueteur(val){
+  currentAnswers["Identification de l'enquêteur"] = val;
+}
+
+function onCommuneChange(label, silent){
+  currentAnswers['Commune'] = label;
+  const c = COMMUNES.find(x=>x.label===label);
+  const arrondSel = document.getElementById('sel_arrond');
+  const structSel = document.getElementById('sel_structure');
+  if (!silent){ currentAnswers['Arrondissement'] = ''; currentAnswers['Structure']=''; }
+  structSel.innerHTML = '<option value="">-- Choisir l\'arrondissement d\'abord --</option>';
+  if (!c){ arrondSel.innerHTML = '<option value="">-- Choisir la commune d\'abord --</option>'; return; }
+  const list = ARRONDS.filter(a=>a.commune===c.name);
+  arrondSel.innerHTML = '<option value="">-- Choisir --</option>' + list.map(a=>`<option value="${escapeHtml(a.label)}" data-name="${a.name}">${escapeHtml(a.label)}</option>`).join('');
+}
+
+function onArrondChange(label, silent){
+  currentAnswers['Arrondissement'] = label;
+  const a = ARRONDS.find(x=>x.label===label);
+  const structSel = document.getElementById('sel_structure');
+  if (!silent){ currentAnswers['Structure']=''; }
+  if (!a){ structSel.innerHTML = '<option value="">-- Choisir l\'arrondissement d\'abord --</option>'; return; }
+  const list = STRUCTS.filter(s=>s.arrondissement===a.name);
+  structSel.innerHTML = '<option value="">-- Choisir --</option>' + list.map(s=>`<option value="${escapeHtml(s.label)}">${escapeHtml(s.label)}</option>`).join('');
+}
+document.addEventListener('change', e=>{
+  if (e.target && e.target.id === 'sel_structure'){ currentAnswers['Structure'] = e.target.value; }
+});
+
+/* ============================================================
+ *  GÉOLOCALISATION — capture explicite avec tentative automatique
+ * ============================================================ */
+let lastKnownPosition = null;
+let gpsAttempting = false;
+let gpsAttemptFailed = false;
+let gpsSkipped = false;
+
+function startBackgroundGeolocation(){
+  if (!HAS_GEO_TECH || !navigator.geolocation) return;
+  gpsAttempting = true;
+  navigator.geolocation.getCurrentPosition(
+    pos => { lastKnownPosition = pos; gpsAttempting = false; if (SECTIONS[currentSection] && SECTIONS[currentSection].kind === 'gps') renderSection(currentSection); },
+    () => { gpsAttempting = false; gpsAttemptFailed = true; if (SECTIONS[currentSection] && SECTIONS[currentSection].kind === 'gps') renderSection(currentSection); },
+    {timeout:8000, maximumAge:60000}
+  );
+}
+
+function captureGps(){
+  if (!navigator.geolocation){ gpsAttemptFailed = true; renderSection(currentSection); return; }
+  gpsAttempting = true; gpsAttemptFailed = false;
+  renderSection(currentSection);
+  navigator.geolocation.getCurrentPosition(
+    pos => { lastKnownPosition = pos; gpsAttempting = false; renderSection(currentSection); },
+    () => { gpsAttempting = false; gpsAttemptFailed = true; renderSection(currentSection); },
+    {timeout:10000, maximumAge:60000}
+  );
+}
+
+function skipGps(){
+  gpsSkipped = true;
+  renderSection(currentSection);
+}
+
+function renderGpsSection(){
+  const captured = !!lastKnownPosition;
+  let statusHtml;
+  if (captured){
+    const acc = (lastKnownPosition.coords && lastKnownPosition.coords.accuracy) ? Math.round(lastKnownPosition.coords.accuracy) : null;
+    statusHtml = `<div class="gps-status gps-ok">✅ Position enregistrée${acc!==null ? ' (précision ~'+acc+' m)' : ''}</div>`;
+  } else if (gpsAttempting){
+    statusHtml = `<div class="gps-status gps-pending">📡 Localisation en cours…</div>`;
+  } else {
+    statusHtml = `<div class="gps-status gps-missing">Position non enregistrée</div>`;
+  }
+  let skipHtml = '';
+  if (!captured && !gpsAttempting && (gpsAttemptFailed || gpsSkipped)){
+    skipHtml = `<button type="button" class="secondary" style="margin-top:10px;background:#fff;color:var(--brand);border:1px solid var(--brand);border-radius:12px;padding:12px;width:100%;font-size:.9rem;cursor:pointer" onclick="skipGps()">Continuer sans position (GPS indisponible)</button>`;
+  }
+  return `<div class="group">
+    <h2>📍 Position GPS</h2>
+    <p class="hint">Enregistrez la position GPS actuelle (celle du centre de santé) avant de commencer. Autorisez la localisation si votre téléphone le demande — cela se fait automatiquement la plupart du temps.</p>
+    ${statusHtml}
+    <button type="button" class="gps-btn" onclick="captureGps()" ${gpsAttempting?'disabled':''}>${captured ? '🔄 Actualiser la position' : (gpsAttempting ? 'Localisation en cours…' : '📍 Enregistrer ma position GPS')}</button>
+    ${skipHtml}
+  </div>`;
+}
+
+/* ============================================================
+ *  NAVIGATION PAR SECTIONS
+ * ============================================================ */
+function buildSections(){
+  const secs = [];
+  if (HAS_GEO_TECH) secs.push({ kind:'gps', title:'📍 Position GPS' });
+  secs.push({ kind:'cascading', title:"📍 Coordonnées de l'enquête" });
+  let lastGroup = null, cur = null;
+  SCHEMA.forEach((f, idx) => {
+    if (f.group !== lastGroup){
+      if (cur) secs.push(cur);
+      cur = { kind:'schema', title: f.group || '', fields: [] };
+      lastGroup = f.group;
+    }
+    cur.fields.push({f, idx});
+  });
+  if (cur) secs.push(cur);
+  return secs;
+}
+
+const SECTIONS = buildSections();
+let currentSection = 0;
+
+function sectionIsEmpty(sec){
+  if (sec.kind !== 'schema') return false;
+  return sec.fields.every(({f}) => {
+    if (!f.relevant) return false;
+    return currentAnswers['__key_' + f.relevant.field] !== f.relevant.equals;
+  });
+}
+
+function hydrateSection(sec){
+  if (sec.kind === 'cascading'){
+    if (HAS_ENQUETEUR){
+      const v = currentAnswers["Identification de l'enquêteur"];
+      const sel = document.getElementById('sel_enqueteur');
+      if (v && sel) sel.value = v;
+    }
+    const commune = currentAnswers['Commune'];
+    if (commune){
+      const selC = document.getElementById('sel_commune');
+      if (selC) selC.value = commune;
+      onCommuneChange(commune, true);
+      const arr = currentAnswers['Arrondissement'];
+      if (arr){
+        const selA = document.getElementById('sel_arrond');
+        if (selA) selA.value = arr;
+        onArrondChange(arr, true);
+        const st = currentAnswers['Structure'];
+        if (st){ const selS = document.getElementById('sel_structure'); if (selS) selS.value = st; }
+      }
+    }
+  } else if (sec.kind === 'schema'){
+    sec.fields.forEach(({f, idx})=>{
+      const name = fieldId(f, idx);
+      const val = currentAnswers[f.column];
+      if (val === undefined || val === '' || val === null) return;
+      if (f.type === 'radio'){
+        document.getElementsByName(name).forEach(inp=>{
+          if (inp.value === val){ inp.checked = true; const w = document.getElementById(inp.id+'_wrap'); if (w) w.classList.add('selected'); }
+        });
+      } else {
+        const el = document.getElementById(name);
+        if (el) el.value = val;
+      }
+    });
+  }
+}
+
+function renderSection(i){
+  currentSection = i;
+  const sec = SECTIONS[i];
+  const root = document.getElementById('fieldsRoot');
+  if (sec.kind === 'gps') root.innerHTML = renderGpsSection();
+  else if (sec.kind === 'cascading') root.innerHTML = renderCascading();
+  else {
+    let html = `<div class="group"><h2>${escapeHtml(sec.title)}</h2>`;
+    sec.fields.forEach(({f, idx}) => html += renderField(f, idx));
+    html += '</div>';
+    root.innerHTML = html;
+  }
+  recomputeVisibility();
+  hydrateSection(sec);
+  updateNav();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function validateSection(i){
+  const sec = SECTIONS[i];
+  let ok = true;
+  if (sec.kind === 'gps'){
+    if (!lastKnownPosition && !gpsSkipped) ok = false;
+  } else if (sec.kind === 'cascading'){
+    if (!currentAnswers['Commune']) ok = false;
+    if (!currentAnswers['Arrondissement']) ok = false;
+    if (!currentAnswers['Structure']) ok = false;
+    if (HAS_ENQUETEUR && !currentAnswers["Identification de l'enquêteur"]) ok = false;
+  } else {
+    sec.fields.forEach(({f, idx})=>{
+      if (!f.required) return;
+      const wrap = document.getElementById('wrap_' + fieldId(f, idx));
+      if (wrap && wrap.classList.contains('hidden')) return;
+      const val = currentAnswers[f.column];
+      if (val === undefined || val === null || val === ''){ ok=false; if(wrap) wrap.style.outline='2px solid #c0392b'; }
+      else if (intRangeErrors[f.column]){ ok=false; if(wrap) wrap.style.outline='2px solid #c0392b'; }
+      else if (wrap) wrap.style.outline='';
+    });
+  }
+  return ok;
+}
+
+function updateNav(){
+  const backBtn = document.getElementById('backBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const progress = document.getElementById('progressLabel');
+  backBtn.classList.toggle('invisible', currentSection === 0);
+  const isLast = currentSection === SECTIONS.length - 1;
+  nextBtn.textContent = isLast ? '✅ Enregistrer la réponse' : 'Suivant →';
+  progress.textContent = 'Étape ' + (currentSection+1) + ' / ' + SECTIONS.length + ' — ' + SECTIONS[currentSection].title;
+}
+
+function goNext(){
+  document.getElementById('errorMsg').style.display = 'none';
+  if (!validateSection(currentSection)){
+    document.getElementById('errorMsg').style.display = 'block';
+    document.getElementById('errorMsg').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  if (currentSection === SECTIONS.length - 1){
+    onSubmit();
+    return;
+  }
+  let target = currentSection + 1;
+  while (target < SECTIONS.length - 1 && sectionIsEmpty(SECTIONS[target])) target++;
+  renderSection(target);
+}
+
+function goBack(){
+  if (currentSection === 0) return;
+  let target = currentSection - 1;
+  while (target > 0 && sectionIsEmpty(SECTIONS[target])) target--;
+  renderSection(target);
+}
+
+function validate(){
+  let ok = true;
+  if (HAS_GEO_TECH && !lastKnownPosition && !gpsSkipped) ok = false;
+  if (!currentAnswers['Commune']) ok = false;
+  if (!currentAnswers['Arrondissement']) ok = false;
+  if (!currentAnswers['Structure']) ok = false;
+  if (HAS_ENQUETEUR && !currentAnswers["Identification de l'enquêteur"]) ok = false;
+  SCHEMA.forEach((f, idx)=>{
+    if (!f.required) return;
+    const val = currentAnswers[f.column];
+    if (f.relevant && currentAnswers['__key_' + f.relevant.field] !== f.relevant.equals) return;
+    if (val === undefined || val === null || val === '') ok = false;
+    else if (intRangeErrors[f.column]) ok = false;
+  });
+  return ok;
+}
+
+function buildPayload(){
+  const data = Object.assign({}, currentAnswers);
+  // remove internal helper keys
+  Object.keys(data).forEach(k=>{ if (k.indexOf('__key_')===0) delete data[k]; });
+  if (HAS_GEO_TECH){
+    data['today'] = new Date().toISOString().slice(0,10);
+  }
+  if (HAS_START_END){
+    data['start'] = startTime.toISOString();
+    data['end'] = new Date().toISOString();
+  }
+  return data;
+}
+
+function applyGeolocationIfAvailable(){
+  if (!HAS_GEO_TECH || !lastKnownPosition) return;
+  const pos = lastKnownPosition;
+  currentAnswers['start-geopoint'] = pos.coords.latitude+' '+pos.coords.longitude+' '+(pos.coords.altitude||0)+' '+(pos.coords.accuracy||0);
+  currentAnswers['_start-geopoint_latitude'] = pos.coords.latitude;
+  currentAnswers['_start-geopoint_longitude'] = pos.coords.longitude;
+  currentAnswers['_start-geopoint_altitude'] = pos.coords.altitude || '';
+  currentAnswers['_start-geopoint_precision'] = pos.coords.accuracy || '';
+}
+
+function onSubmit(){
+  document.getElementById('errorMsg').style.display='none';
+  if (!validate()){
+    document.getElementById('errorMsg').style.display='block';
+    document.getElementById('errorMsg').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  const btn = document.getElementById('nextBtn');
+  btn.disabled = true; btn.textContent = 'Enregistrement...';
+  applyGeolocationIfAvailable(); // instantané : n'attend jamais le GPS s'il est déjà connu
+  const payload = buildPayload();
+  sendOrQueue(payload, ()=>{
+    btn.disabled = false;
+  });
+}
+
+function sendOrQueue(payload, done){
+  if (!navigator.onLine){
+    queueSubmission(payload);
+    showToast('Hors connexion : réponse sauvegardée localement.');
+    resetForm();
+    done();
+    return;
+  }
+  callApi(SUBMIT_FN, payload)
+    .then(res => { if (res && res.ok){ showToast('✅ Réponse enregistrée avec succès.'); resetForm(); done(); updateQueueBadge(); } else { queueSubmission(payload); showToast('Connexion instable : réponse sauvegardée localement.'); resetForm(); done(); } })
+    .catch(() => { queueSubmission(payload); showToast('Connexion instable : réponse sauvegardée localement.'); resetForm(); done(); });
+}
+
+function queueSubmission(payload){
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  q.push(payload);
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+  updateQueueBadge();
+}
+
+function updateQueueBadge(){
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  const el = document.getElementById('qCount');
+  if (q.length > 0){ el.style.display='inline-block'; el.textContent = q.length; }
+  else { el.style.display='none'; }
+  const banner = document.getElementById('status-banner');
+  if (!navigator.onLine){
+    banner.className = 'offline'; banner.textContent = '⚠️ Hors connexion — les réponses seront sauvegardées localement.';
+  } else if (q.length > 0){
+    banner.className = 'queued'; banner.textContent = q.length + ' réponse(s) en attente de synchronisation.';
+  } else {
+    banner.className = ''; banner.textContent='';
+  }
+}
+
+function syncQueue(manual){
+  const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  if (q.length === 0){ if(manual) showToast('Aucune réponse en attente.'); return; }
+  if (!navigator.onLine){ if(manual) showToast('Toujours hors connexion.'); return; }
+  let remaining = q.slice();
+  function next(){
+    if (remaining.length === 0){ localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining)); updateQueueBadge(); if(manual) showToast('✅ Synchronisation terminée.'); return; }
+    const item = remaining[0];
+    callApi(SUBMIT_FN, item)
+      .then(res => { if (res && res.ok){ remaining.shift(); localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining)); updateQueueBadge(); next(); } else { localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining)); updateQueueBadge(); if(manual) showToast('Synchronisation interrompue (connexion).'); } })
+      .catch(() => { localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining)); updateQueueBadge(); if(manual) showToast('Synchronisation interrompue (connexion).'); });
+  }
+  next();
+}
+
+function resetForm(){
+  currentAnswers = {};
+  startTime = new Date();
+  gpsSkipped = false;
+  renderSection(0);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  setTimeout(()=>{ t.style.display='none'; }, 3000);
+}
+
+window.addEventListener('online', ()=>{ updateQueueBadge(); syncQueue(false); });
+window.addEventListener('offline', updateQueueBadge);
+
+startBackgroundGeolocation();
+renderSection(0);
+updateQueueBadge();
+syncQueue(false);
+</script>
+</body>
+</html>
