@@ -1,83 +1,109 @@
-# Déploiement sur GitHub Pages (avec icônes "écran d'accueil")
+# Déploiement — Satisfaction Zones Sanitaires du Bénin
 
-## Fichiers à uploader sur GitHub (12 fichiers, à la racine du dépôt)
+## Ce qui change dans cette version
+
+- **L'accueil (`index.html`) n'affiche plus aucun formulaire.** Deux façons d'entrer :
+  - **Identifiant + mot de passe** → ouvre directement `admin.html` selon le niveau du compte.
+  - **Scanner de QR code intégré** (caméra activée dans la page, pas besoin de l'appli
+    caméra du téléphone) → scanner le QR « Enquêteur » ouvre `enqueteur.html`
+    (Usagers + COGECS), scanner le QR « Personnel » ouvre `personnels.html`.
+- **Une fois l'accès accordé par un scan, plus besoin de rescanner** : il reste valable
+  tant que l'appli est réutilisée dans les 6 heures (fenêtre glissante, se prolonge à
+  chaque utilisation). Au-delà de 6 h d'inactivité, un nouveau scan est demandé.
+- **Gestion des comptes** (onglet 🔐 Comptes & QR de `admin.html`, national/administrateur
+  uniquement) : activer/désactiver, modifier (niveau, portée, libellé) ou supprimer
+  n'importe lequel des 122 comptes.
+- **Enregistrement des questionnaires optimisé** : l'ancienne recherche de "première
+  ligne vide" relisait toute la colonne Commune à chaque envoi ; elle est remplacée par
+  une lecture directe de la dernière ligne (`getLastRow()`), beaucoup plus rapide,
+  surtout à mesure que les feuilles grossissent.
+- La capture GPS était déjà bien réglée (position réelle, non mise en cache, jusqu'à
+  30 secondes d'attente pour une précision ≤5 m) — je n'y ai pas touché.
+
+## Fichiers du dépôt GitHub Pages (14 fichiers, à la racine)
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | Page d'accueil |
-| `usagers.html` | Formulaire Usagers |
-| `personnels.html` | Formulaire Personnel soignant |
-| `cogecs.html` | Formulaire COGECS |
-| `admin.html` | Tableau de bord admin |
-| `config.js` | **Le seul fichier à modifier** — l'URL de votre API Apps Script |
-| `manifest.json` | Fait fonctionner "Ajouter à l'écran d'accueil" sur Android |
-| `icon-180.png`, `icon-192.png`, `icon-512.png`, `favicon-32.png` | Icônes de l'application (logo bleu avec une checklist) |
+| `index.html` | Accueil : connexion identifiants + scanner QR caméra |
+| `enqueteur.html` | Choix Usagers / COGECS (après scan du QR Enquêteur) |
+| `usagers.html`, `cogecs.html` | Formulaires (accès conditionné au scan Enquêteur) |
+| `personnels.html` | Formulaire Personnel (accès conditionné au scan Personnel) |
+| `admin.html` | Tableau de bord + onglet Comptes & QR |
+| `config.js`, `manifest.json`, icônes | Inchangés |
 
-> ⚠️ **Tous les noms de fichiers sont en minuscules.** GitHub Pages est
-> sensible à la casse — `Index.html` ne fonctionne pas là où `index.html`
-> est attendu, en particulier pour la page d'accueil (`/`).
+## Fichier Apps Script
 
-`Code.gs` **ne va pas sur GitHub** : il reste dans l'éditeur Apps Script (c'est le seul moyen d'écrire dans votre Google Sheet).
+`Code.gs` — remplace entièrement votre fichier actuel.
 
-## Étape 1 — Apps Script (si pas déjà fait)
+## Fichier à distribuer séparément (jamais sur GitHub)
 
-1. Remplacez le contenu de `Code.gs` dans l'éditeur Apps Script par la version fournie.
-2. **Déployer > Gérer les déploiements > ✏️ > Nouvelle version > Déployer.**
-3. Copiez l'URL `.../exec`.
+`Comptes_acces_dashboard.csv` — les 122 identifiants/mots de passe en clair.
 
-## Étape 2 — `config.js`
+## Étape 1 — Apps Script
 
-Ouvrez `config.js`, remplacez :
-```js
-const API_URL = "COLLEZ_ICI_VOTRE_URL_APPS_SCRIPT/exec";
-```
-par votre vraie URL.
+1. **Extensions > Apps Script**, remplacez tout `Code.gs` par le nouveau fichier.
+2. Menu déroulant des fonctions > **setupComptesEtQrTokens** > ▶ **Exécuter** (une fois).
+   Crée `Comptes` (122 lignes, avec la colonne **Actif**), `Sessions`, `QRTokens`.
+   *(Si vous aviez déjà exécuté une version précédente de cette fonction sans la colonne
+   Actif, exécutez plutôt **migrationAjouterColonneActif** pour l'ajouter sans tout
+   recréer.)*
+3. **Déployer > Gérer les déploiements > ✏️ > Nouvelle version > Déployer.**
 
-## Étape 3 — GitHub
+Le mot de passe partagé (`ADMIN_PASSWORD`) n'est plus nécessaire pour se connecter au
+tableau de bord (la connexion se fait avec un compte personnel), mais reste accepté si
+vous l'utilisez ailleurs.
 
-1. Créez un dépôt (Public).
-2. **Add file > Upload files**, glissez les 12 fichiers ci-dessus, **Commit changes**.
-3. **Settings > Pages** → Source : `Deploy from a branch` → Branch : `main` / `(root)` → **Save**.
-4. Votre site est à `https://VOTRE-NOM.github.io/VOTRE-DEPOT/`.
+## Étape 2 — GitHub
 
-## Étape 4 — Installer sur l'écran d'accueil (mobile)
+Uploadez les 8 fichiers HTML/JS du premier tableau (remplacent les fichiers existants).
 
-Une fois le site en ligne, chaque page (`index.html`, `usagers.html`, etc.)
-peut être ajoutée à l'écran d'accueil **comme une vraie application**, avec
-l'icône bleue et sans barre d'adresse visible :
+## Étape 3 — Comptes et QR codes
 
-**Sur Android (Chrome) :**
-1. Ouvrez le lien (ex. `.../usagers.html`).
-2. Menu ⋮ (en haut à droite) → **Ajouter à l'écran d'accueil** (ou "Installer l'application" si Chrome le propose directement).
-3. Confirmez → l'icône apparaît sur l'écran d'accueil.
+1. Distribuez `Comptes_acces_dashboard.csv`. Chacun peut changer son mot de passe depuis
+   `admin.html`.
+2. Connectez-vous une première fois en tant qu'**administrateur** ou **national** pour
+   accéder à l'onglet 🔐 Comptes & QR :
+   - Les 2 QR (Enquêteur, Personnel) s'affichent et se téléchargent en PNG — à imprimer
+     ou afficher à l'écran pour que les enquêteurs/personnels les scannent.
+   - **Actualiser** génère un nouveau QR et invalide l'ancien (un scan ultérieur de
+     l'ancienne image échoue ; les accès déjà accordés avant l'actualisation restent
+     valables jusqu'à leurs 6 h d'inactivité).
+   - Le tableau des comptes permet d'activer/désactiver (⛔/✅), modifier (✏️) ou
+     supprimer (🗑️) chaque compte.
 
-**Sur iPhone (Safari — obligatoire, ça ne marche pas depuis Chrome iOS) :**
-1. Ouvrez le lien dans **Safari**.
-2. Bouton **Partager** (le carré avec la flèche vers le haut, en bas de l'écran).
-3. **Sur l'écran d'accueil**.
-4. Confirmez → l'icône apparaît.
+## Portée de chaque niveau de compte (filtrage réellement côté serveur)
 
-Faites ceci séparément pour chaque lien que vous voulez en accès direct
-(ex. les enquêteurs Usagers installent `usagers.html`, ceux du COGECS
-installent `cogecs.html`, vous installez `admin.html`) — chacun aura sa
-propre icône et son propre nom sur l'écran d'accueil.
+| Niveau | Voit dans le tableau de bord |
+|---|---|
+| Commune | Uniquement sa commune |
+| Zone sanitaire | Toutes les communes de sa zone |
+| Département | Toutes les communes de son département |
+| National / Administrateur | Tout, sans restriction |
 
-## Mettre à jour un fichier plus tard
+## Comment fonctionne l'accès par QR (technique, pour comprendre le comportement)
 
-Sur GitHub : ouvrez le fichier → ✏️ → modifiez → **Commit changes**. Le
-site se met à jour en 1-2 minutes. (`Code.gs` doit toujours être redéployé
-séparément depuis l'éditeur Apps Script.)
+1. Le scan (caméra intégrée à `index.html`, ou lien ouvert par l'appareil photo natif du
+   téléphone) envoie le rôle et le jeton au serveur pour vérification.
+2. Si le jeton correspond au jeton courant, un accès local est enregistré dans le
+   téléphone (`localStorage`), horodaté.
+3. Chaque utilisation (chargement de page, toutes les 5 minutes en arrière-plan)
+   rafraîchit cet horodatage → fenêtre glissante de 6 h, pas de nouveau scan tant que
+   l'appli est utilisée.
+4. Un lien « 🔄 Scanner un autre code » (page Enquêteur) permet de changer de rôle
+   manuellement sur un même appareil.
+
+## ⚠️ Limite assumée
+
+Le contrôle d'accès par QR reste **local à l'appareil** : il ne revérifie pas le serveur
+en continu pendant les 6 h (pour fonctionner hors connexion). Une actualisation de QR par
+l'administrateur bloque donc les **nouveaux** scans immédiatement, mais ne coupe pas
+un accès déjà en cours avant l'expiration de ses 6 h d'inactivité.
 
 ## En cas de souci
 
-- **404 sur la page d'accueil** : vérifiez que le fichier s'appelle bien
-  `index.html` (minuscules) dans le dépôt.
-- **404 sur un lien précis** (ex. Usagers) : vérifiez que le nom exact du
-  fichier sur GitHub correspond au lien cliqué (`usagers.html`, pas
-  `Usagers.html` ni `FormUsagers.html`).
-- **"API_URL non configurée" ou rien ne se passe à l'envoi** : `config.js`
-  n'a pas la bonne URL, ou `Code.gs` n'a pas été redéployé en nouvelle version.
-- **Pas d'icône lors de l'ajout à l'écran d'accueil** : vérifiez que
-  `manifest.json`, `icon-180.png`, `icon-192.png`, `icon-512.png` et
-  `favicon-32.png` sont bien présents dans le dépôt, au même niveau que les
-  pages HTML.
+- **La caméra ne s'active pas** : nécessite HTTPS (GitHub Pages l'est par défaut) et
+  l'autorisation caméra du navigateur/téléphone.
+- **« Identifiant inconnu » / « Compte désactivé »** : vérifiez l'onglet `Comptes` (colonne
+  Actif) ou réactivez le compte depuis l'onglet 🔐 Comptes & QR.
+- **QR vide** : vérifiez que la nouvelle version du déploiement Apps Script est active.
+- Pour le reste (404, écran d'accueil mobile), rien n'a changé par rapport à avant.

@@ -103,18 +103,15 @@
   <div class="headerRight">
     <span class="sessionBadge" id="sessionBadge" style="display:none"></span>
     <button class="linkBtn" id="changePassBtn" style="display:none" onclick="openPassModal()">Changer mon mot de passe</button>
+    <button class="linkBtn" onclick="logout()">Se déconnecter</button>
     <a href="index.html">Accueil</a>
   </div>
 </header>
 
-<div id="loginBox">
-  <h2>🔒 Accès administrateur</h2>
-  <input type="password" id="pwdInput" placeholder="Mot de passe partagé du tableau de bord" onkeydown="if(event.key==='Enter')login()">
-  <div class="subSep">Votre compte personnel (niveau de couverture)</div>
-  <input type="text" id="accUserInput" placeholder="Identifiant personnel" onkeydown="if(event.key==='Enter')login()">
-  <input type="password" id="accPassInput" placeholder="Mot de passe personnel" onkeydown="if(event.key==='Enter')login()">
-  <button onclick="login()">Se connecter</button>
-  <div id="loginError"></div>
+<div id="loginBox" style="max-width:340px;margin:60px auto;background:#fff;padding:24px;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.1);text-align:center">
+  <h2>🔒 Connexion requise</h2>
+  <p style="color:#6b7280;font-size:.9rem">Connectez-vous depuis la page d'accueil avec votre identifiant personnel.</p>
+  <a href="index.html" style="display:inline-block;margin-top:10px;padding:11px 18px;border-radius:10px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600">Aller à l'accueil</a>
 </div>
 
 <main id="dashRoot" style="display:none">
@@ -137,7 +134,7 @@
     <div class="tab" data-panel="p-personnels" onclick="showPanel('p-personnels', this)">👩‍⚕️ Personnel</div>
     <div class="tab" data-panel="p-cogecs" onclick="showPanel('p-cogecs', this)">👨‍👩‍👧‍👦 COGECS</div>
     <div class="tab" data-panel="p-carte" onclick="showPanel('p-carte', this)">🗺️ Enquêteurs</div>
-    <div class="tab" data-panel="p-comptes" onclick="showPanel('p-comptes', this)">🔐 Comptes &amp; QR</div>
+    <div class="tab" id="tabComptes" data-panel="p-comptes" onclick="showPanel('p-comptes', this)">🔐 Comptes &amp; QR</div>
   </div>
 
   <div id="p-commune" class="panel active">
@@ -262,8 +259,116 @@
       <div class="scopeNote" id="monCompteInfo">—</div>
       <button onclick="openPassModal()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Changer mon mot de passe</button>
     </div>
+
+    <div class="card">
+      <h2>👥 Comptes utilisateurs</h2>
+      <div class="scopeNote">Activer/désactiver, modifier ou supprimer un compte. Réservé aux comptes national/administrateur.</div>
+      <input type="text" id="accountsFilter" placeholder="Filtrer (identifiant, commune, zone...)" style="width:100%;padding:9px 11px;border:1px solid #dfe4ea;border-radius:8px;margin-bottom:10px;font-size:.85rem" oninput="renderAccountsList()">
+      <div style="max-height:420px;overflow:auto">
+        <table id="tblAccounts" style="width:100%;font-size:.82rem;border-collapse:collapse">
+          <thead><tr style="text-align:left;color:#6b7280">
+            <th style="padding:6px">Identifiant</th><th>Niveau</th><th>Portée</th><th>Statut</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="accountsBody"><tr><td colspan="5" style="padding:10px;color:#9aa5b1">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </main>
+
+<div class="modalOverlay" id="editAccountOverlay">
+  <div class="modalCard">
+    <h3>Modifier le compte</h3>
+    <input type="text" id="editUsername" disabled style="background:#f4f6f8">
+    <select id="editLevel" style="width:100%;padding:11px;border:1px solid #dfe4ea;border-radius:8px;margin-bottom:10px">
+      <option value="commune">Commune</option>
+      <option value="zone">Zone sanitaire</option>
+      <option value="departement">Département</option>
+      <option value="national">National</option>
+      <option value="admin">Administrateur</option>
+    </select>
+    <input type="text" id="editDept" placeholder="Département">
+    <input type="text" id="editZone" placeholder="Zone sanitaire">
+    <input type="text" id="editCommune" placeholder="Commune">
+    <input type="text" id="editLabel" placeholder="Libellé affiché">
+    <div class="modalActions">
+      <button class="secondary" onclick="document.getElementById('editAccountOverlay').classList.remove('open')">Annuler</button>
+      <button class="primary" onclick="submitEditAccount()">Enregistrer</button>
+    </div>
+    <div class="modalMsg" id="editAccountMsg"></div>
+  </div>
+</div>
+
+<script>
+let accountsCache = [];
+function loadAccountsList(){
+  callApi('listAccounts', {token: session.token}, null).then(res=>{
+    if (res && res.ok){ accountsCache = res.accounts; renderAccountsList(); }
+    else document.getElementById('accountsBody').innerHTML = '<tr><td colspan="5" style="padding:10px;color:#c0392b">'+((res&&res.error)||'Erreur de chargement')+'</td></tr>';
+  });
+}
+function renderAccountsList(){
+  const q = (document.getElementById('accountsFilter').value || '').toLowerCase();
+  const rows = accountsCache.filter(a=>{
+    if (!q) return true;
+    return (a.username+' '+a.label+' '+a.departement+' '+a.zone+' '+a.commune).toLowerCase().indexOf(q) !== -1;
+  });
+  const tbody = document.getElementById('accountsBody');
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="5" style="padding:10px;color:#9aa5b1">Aucun compte</td></tr>'; return; }
+  tbody.innerHTML = rows.map(a=>{
+    const scope = [a.departement, a.zone, a.commune].filter(Boolean).join(' · ') || '—';
+    const statusColor = a.active ? '#1a9e5c' : '#c0392b';
+    return `<tr style="border-top:1px solid #eef1f4">
+      <td style="padding:6px">${a.username}</td>
+      <td>${a.level}</td>
+      <td>${scope}</td>
+      <td style="color:${statusColor};font-weight:600">${a.active ? 'Actif' : 'Désactivé'}</td>
+      <td>
+        <button onclick='openEditAccount(${JSON.stringify(a).replace(/'/g,"&apos;")})' style="border:none;background:none;color:var(--brand);cursor:pointer;font-size:.8rem">✏️</button>
+        <button onclick="toggleAccountActive('${a.username}', ${!a.active})" style="border:none;background:none;color:${a.active?'#c0392b':'#1a9e5c'};cursor:pointer;font-size:.8rem">${a.active ? '⛔' : '✅'}</button>
+        <button onclick="deleteAccountConfirm('${a.username}')" style="border:none;background:none;color:#c0392b;cursor:pointer;font-size:.8rem">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function toggleAccountActive(username, active){
+  callApi('setAccountActive', {token: session.token, username: username, active: active}, null).then(res=>{
+    if (res && res.ok) loadAccountsList(); else alert((res&&res.error)||'Échec.');
+  });
+}
+function deleteAccountConfirm(username){
+  if (!confirm('Supprimer définitivement le compte "' + username + '" ?')) return;
+  callApi('deleteAccount', {token: session.token, username: username}, null).then(res=>{
+    if (res && res.ok) loadAccountsList(); else alert((res&&res.error)||'Échec.');
+  });
+}
+function openEditAccount(a){
+  document.getElementById('editUsername').value = a.username;
+  document.getElementById('editLevel').value = a.level;
+  document.getElementById('editDept').value = a.departement || '';
+  document.getElementById('editZone').value = a.zone || '';
+  document.getElementById('editCommune').value = a.commune || '';
+  document.getElementById('editLabel').value = a.label || '';
+  document.getElementById('editAccountMsg').textContent = '';
+  document.getElementById('editAccountOverlay').classList.add('open');
+}
+function submitEditAccount(){
+  const username = document.getElementById('editUsername').value;
+  const fields = {
+    level: document.getElementById('editLevel').value,
+    departement: document.getElementById('editDept').value,
+    zone: document.getElementById('editZone').value,
+    commune: document.getElementById('editCommune').value,
+    label: document.getElementById('editLabel').value
+  };
+  callApi('updateAccount', {token: session.token, username: username, fields: fields}, null).then(res=>{
+    const msg = document.getElementById('editAccountMsg');
+    if (!res || !res.ok){ msg.textContent = (res&&res.error)||'Échec.'; msg.className='modalMsg err'; return; }
+    document.getElementById('editAccountOverlay').classList.remove('open');
+    loadAccountsList();
+  });
+}
+</script>
 
 <div class="modalOverlay" id="passModalOverlay">
   <div class="modalCard">
@@ -280,34 +385,9 @@
 </div>
 
 <script>
-let pwd = '';
 let charts = {};
 let autoTimer = null;
 let session = null; // {token, account:{username, level, departement, zone, commune, label}}
-
-function login(){
-  pwd = document.getElementById('pwdInput').value;
-  const accUser = document.getElementById('accUserInput').value.trim();
-  const accPass = document.getElementById('accPassInput').value;
-  document.getElementById('loginError').textContent = 'Connexion...';
-
-  if (!accUser || !accPass){
-    document.getElementById('loginError').textContent = 'Renseignez aussi votre identifiant et mot de passe personnels.';
-    return;
-  }
-
-  Promise.all([
-    callApi('checkAdminPassword', null, pwd),
-    callApi('accountLogin', {username: accUser}, accPass)
-  ]).then(([resPwd, resAcc])=>{
-    if (!resPwd || !resPwd.valid){ document.getElementById('loginError').textContent = 'Mot de passe partagé incorrect.'; return; }
-    if (!resAcc || !resAcc.ok){ document.getElementById('loginError').textContent = resAcc && resAcc.error || 'Identifiant ou mot de passe personnel incorrect.'; return; }
-    session = { token: resAcc.token, account: resAcc.account };
-    sessionStorage.setItem('sz_admin_session', JSON.stringify(session));
-    sessionStorage.setItem('sz_admin_pwd', pwd);
-    enterDashboard();
-  }).catch(()=>{ document.getElementById('loginError').textContent = 'Erreur de connexion.'; });
-}
 
 function enterDashboard(){
   document.getElementById('loginBox').style.display = 'none';
@@ -324,19 +404,25 @@ function enterDashboard(){
   const canManageQr = (session.account.level === 'admin' || session.account.level === 'national');
   document.getElementById('btnRefreshEnqueteur').disabled = !canManageQr;
   document.getElementById('btnRefreshPersonnel').disabled = !canManageQr;
+  document.getElementById('tabComptes').style.display = canManageQr ? 'block' : 'none';
   loadData(true);
   loadQrCodes();
+  if (canManageQr) loadAccountsList();
   autoTimer = setInterval(()=>loadData(false), 30000); // auto-refresh 30s
 }
 
-// Reprise de session si déjà connecté dans cet onglet
+// La connexion se fait sur index.html ; ici on ne fait que lire la session.
 (function(){
   const saved = sessionStorage.getItem('sz_admin_session');
-  const savedPwd = sessionStorage.getItem('sz_admin_pwd');
-  if (saved && savedPwd){
-    try { session = JSON.parse(saved); pwd = savedPwd; enterDashboard(); } catch(e){}
-  }
+  if (!saved){ window.location.href = 'index.html'; return; }
+  try { session = JSON.parse(saved); enterDashboard(); }
+  catch(e){ window.location.href = 'index.html'; }
 })();
+
+function logout(){
+  sessionStorage.removeItem('sz_admin_session');
+  window.location.href = 'index.html';
+}
 
 // ------------------------------------------------------------------
 // QR CODES (Enquêteur / Personnel)
@@ -409,7 +495,7 @@ function showPanel(id, el){
 }
 
 function loadData(first){
-  callApi('getDashboardData', {token: session ? session.token : null}, pwd)
+  callApi('getDashboardData', {token: session ? session.token : null}, null)
     .then(d => renderData(d))
     .catch(()=>{ document.getElementById('lastUpdate').textContent = 'Erreur lors du chargement.'; });
 }

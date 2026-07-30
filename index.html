@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Satisfaction ZS">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{--brand:#0f4c81}
   *{box-sizing:border-box}
@@ -22,88 +22,162 @@
   .logoRow img{width:56px;height:56px;border-radius:14px}
   h1{font-size:1.3rem;color:var(--brand);margin-bottom:4px;text-align:center}
   p.sub{color:#6b7280;margin-top:0;text-align:center}
-  .targets{display:grid;gap:16px;margin-top:24px;max-width:520px;margin-left:auto;margin-right:auto}
-  .card{display:block;background:#fff;border-radius:16px;padding:26px 20px;text-decoration:none;color:#1f2937;box-shadow:0 1px 5px rgba(0,0,0,.08);border-left:8px solid var(--brand);text-align:center}
-  .card .emoji{font-size:2.2rem;display:block;margin-bottom:8px}
-  .card h2{margin:0 0 4px;font-size:1.15rem}
-  .card p{margin:0;color:#6b7280;font-size:.9rem}
-  .other{margin-top:36px;text-align:center}
-  .other a{color:#9aa5b1;text-decoration:underline;font-size:.8rem;margin:0 8px}
-
-  .qrSection{max-width:520px;margin:40px auto 0;text-align:center}
-  .qrSection h2{font-size:1rem;color:var(--brand);margin-bottom:4px}
-  .qrSection p.sub{margin-bottom:18px}
-  .qrGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .qrCard{background:#fff;border-radius:16px;padding:18px 14px;box-shadow:0 1px 5px rgba(0,0,0,.08)}
-  .qrCard h3{margin:0 0 10px;font-size:.95rem;color:#1f2937}
-  .qrCard .qrBox{display:flex;justify-content:center;margin-bottom:8px;min-height:128px;align-items:center}
-  .qrCard p{margin:0;color:#6b7280;font-size:.78rem}
-  @media (max-width:480px){ .qrGrid{grid-template-columns:1fr} }
+  .wrapCards{display:grid;gap:16px;margin-top:24px;max-width:440px;margin-left:auto;margin-right:auto}
+  .card{background:#fff;border-radius:16px;padding:22px 20px;box-shadow:0 1px 5px rgba(0,0,0,.08);border-left:8px solid var(--brand)}
+  .card h2{margin:0 0 12px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  .card input{width:100%;padding:11px;border:1px solid #dfe4ea;border-radius:10px;margin-bottom:10px;font-size:.95rem}
+  .card button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--brand);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer}
+  .card button.secondary{background:#eef1f4;color:#1f2937;margin-top:8px}
+  #loginError{color:#c0392b;font-size:.8rem;margin-top:8px;min-height:16px}
+  #reader{width:100%;border-radius:12px;overflow:hidden}
+  .scanHint{font-size:.8rem;color:#6b7280;margin-top:8px;text-align:center}
+  #scanMsg{font-size:.85rem;margin-top:10px;text-align:center;min-height:18px}
+  #scanMsg.err{color:#c0392b}
+  #scanMsg.ok{color:#1a9e5c}
+  .or{text-align:center;color:#9aa5b1;font-size:.78rem;margin:22px 0 6px}
+  .redirecting{max-width:420px;margin:80px auto;text-align:center;background:#fff;border-radius:16px;padding:30px;box-shadow:0 1px 5px rgba(0,0,0,.08)}
 </style>
 </head>
 <body>
+
+<div id="redirecting" class="redirecting" style="display:none">
   <div class="logoRow"><img src="icon-192.png" alt="Logo"></div>
-  <h1>🎯 Cible à enquêter</h1>
-  <p class="sub">Choisissez le type de personne interrogée</p>
+  <p>Session déjà active, ouverture du formulaire…</p>
+</div>
 
-  <div class="targets">
-    <a class="card" id="cardUsagers" href="usagers.html">
-      <span class="emoji">👩‍👦</span>
-      <h2>Usagers (patients)</h2>
-      <p>Questionnaire de satisfaction des usagers des centres de santé</p>
-    </a>
+<div id="root">
+  <div class="logoRow"><img src="icon-192.png" alt="Logo"></div>
+  <h1>Enquêtes de satisfaction</h1>
+  <p class="sub">Zones sanitaires du Bénin</p>
 
-    <a class="card" href="personnels.html" id="cardPersonnels">
-      <span class="emoji">👩‍⚕️</span>
-      <h2>Personnel soignant</h2>
-      <p>Questionnaire de satisfaction du personnel de santé</p>
-    </a>
+  <div class="wrapCards">
+    <div class="card">
+      <h2>🔒 Tableau de bord</h2>
+      <input type="text" id="loginUser" placeholder="Identifiant personnel">
+      <input type="password" id="loginPass" placeholder="Mot de passe">
+      <button onclick="doLogin()">Se connecter</button>
+      <div id="loginError"></div>
+    </div>
 
-    <a class="card" id="cardCogecs" href="cogecs.html">
-      <span class="emoji">👨‍👩‍👧‍👦</span>
-      <h2>Membre COGECS</h2>
-      <p>Questionnaire de satisfaction des membres du COGECS</p>
-    </a>
-  </div>
+    <div class="or">— ou —</div>
 
-  <div class="qrSection">
-    <h2>📱 Accès rapide par QR code</h2>
-    <p class="sub">À scanner avec l'appareil photo du téléphone</p>
-    <div class="qrGrid">
-      <div class="qrCard">
-        <h3>🧑‍💼 Enquêteur<br><small>(Usagers + COGECS)</small></h3>
-        <div class="qrBox" id="qrEnqueteur"></div>
-        <p>Ouvre le choix Usagers / COGECS</p>
-      </div>
-      <div class="qrCard">
-        <h3>👩‍⚕️ Personnel de santé</h3>
-        <div class="qrBox" id="qrPersonnel"></div>
-        <p>Ouvre directement le formulaire Personnel</p>
-      </div>
+    <div class="card">
+      <h2>📷 Scanner un QR code</h2>
+      <div id="reader"></div>
+      <button class="secondary" id="scanToggle" onclick="toggleScanner()">Activer la caméra</button>
+      <div id="scanMsg"></div>
+      <div class="scanHint">Scannez le QR « Enquêteur » ou « Personnel » fourni par l'administrateur.</div>
     </div>
   </div>
-
-  <div class="other">
-    <a href="admin.html">📊 Tableau de bord admin</a>
-  </div>
+</div>
 
 <script src="config.js"></script>
 <script>
-function absoluteUrl(path){
-  return window.location.href.replace(/index\.html.*$/, '') + path;
+const GRANT_KEY = 'sz_grant';
+const INACTIVITY_LIMIT_MS = 6 * 60 * 60 * 1000; // 6 heures d'inactivité
+
+function saveGrant(role){
+  localStorage.setItem(GRANT_KEY, JSON.stringify({ role: role, lastActivity: Date.now() }));
 }
-function buildQr(elId, targetPath, role){
+function loadGrant(){
+  try { return JSON.parse(localStorage.getItem(GRANT_KEY)); } catch(e){ return null; }
+}
+function grantStillValid(g){
+  return g && (Date.now() - g.lastActivity) <= INACTIVITY_LIMIT_MS;
+}
+function destinationFor(role){
+  return role === 'enqueteur' ? 'enqueteur.html' : 'personnels.html';
+}
+
+// ---- Connexion tableau de bord ----
+function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  err.textContent = 'Connexion...';
+  callApi('accountLogin', {username: u}, p).then(res=>{
+    if (!res || !res.ok){ err.textContent = (res && res.error) || 'Connexion impossible.'; return; }
+    sessionStorage.setItem('sz_admin_session', JSON.stringify({ token: res.token, account: res.account }));
+    window.location.href = 'admin.html';
+  }).catch(()=>{ err.textContent = 'Erreur de connexion.'; });
+}
+
+// ---- Scanner QR (caméra) ----
+let html5QrCode = null;
+let scannerActive = false;
+
+function parseRoleAndToken(text){
+  try {
+    const url = new URL(text);
+    return { role: url.searchParams.get('role'), token: url.searchParams.get('t') };
+  } catch(e){ return { role: null, token: null }; }
+}
+
+function processScan(role, token){
+  const msg = document.getElementById('scanMsg');
+  if (!role || !token || (role !== 'enqueteur' && role !== 'personnel')){
+    msg.textContent = 'QR code non reconnu.'; msg.className = 'err'; return;
+  }
+  msg.textContent = 'Vérification...'; msg.className = '';
   callApi('getQrToken', {role: role}).then(res=>{
-    const token = (res && res.ok) ? res.token : '';
-    const url = absoluteUrl(targetPath) + (token ? ('?t=' + encodeURIComponent(token)) : '');
-    document.getElementById(elId).innerHTML = '';
-    new QRCode(document.getElementById(elId), { text: url, width: 128, height: 128, colorDark: '#0f4c81' });
-  }).catch(()=>{
-    document.getElementById(elId).innerHTML = '<p style="font-size:.75rem;color:#c0392b">QR indisponible hors connexion</p>';
-  });
+    if (res && res.ok && res.token === token){
+      saveGrant(role);
+      msg.textContent = 'Accès validé, ouverture du formulaire…'; msg.className = 'ok';
+      stopScanner();
+      setTimeout(()=>{ window.location.href = destinationFor(role); }, 400);
+    } else {
+      msg.textContent = 'Ce QR code n\'est plus à jour. Demandez le QR code actuel à l\'administrateur.';
+      msg.className = 'err';
+    }
+  }).catch(()=>{ msg.textContent = 'Impossible de vérifier le QR code (hors connexion ?).'; msg.className = 'err'; });
 }
-buildQr('qrEnqueteur', 'enqueteur.html', 'enqueteur');
-buildQr('qrPersonnel', 'personnels.html', 'personnel');
+
+function toggleScanner(){
+  if (scannerActive){ stopScanner(); return; }
+  startScanner();
+}
+function startScanner(){
+  const btn = document.getElementById('scanToggle');
+  html5QrCode = new Html5Qrcode('reader');
+  Html5Qrcode.getCameras().then(cameras=>{
+    const camId = cameras && cameras.length ? (cameras.find(c=>/back|arrière|rear/i.test(c.label))||cameras[cameras.length-1]).id : null;
+    const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+    const started = camId
+      ? html5QrCode.start(camId, config, onScanDecoded)
+      : html5QrCode.start({ facingMode: 'environment' }, config, onScanDecoded);
+    started.then(()=>{ scannerActive = true; btn.textContent = 'Arrêter la caméra'; })
+      .catch(()=>{ document.getElementById('scanMsg').textContent = 'Impossible d\'accéder à la caméra.'; document.getElementById('scanMsg').className='err'; });
+  }).catch(()=>{ document.getElementById('scanMsg').textContent = 'Aucune caméra disponible sur cet appareil.'; document.getElementById('scanMsg').className='err'; });
+}
+function stopScanner(){
+  if (html5QrCode && scannerActive){
+    html5QrCode.stop().then(()=>html5QrCode.clear()).catch(()=>{});
+  }
+  scannerActive = false;
+  document.getElementById('scanToggle').textContent = 'Activer la caméra';
+}
+let lastDecoded = '', lastDecodedAt = 0;
+function onScanDecoded(decodedText){
+  const now = Date.now();
+  if (decodedText === lastDecoded && (now - lastDecodedAt) < 4000) return; // évite les doublons rafale
+  lastDecoded = decodedText; lastDecodedAt = now;
+  const { role, token } = parseRoleAndToken(decodedText);
+  processScan(role, token);
+}
+
+// ---- Au chargement : reprise automatique si un accès est déjà valide ----
+(function(){
+  const g = loadGrant();
+  if (grantStillValid(g)){
+    document.getElementById('root').style.display = 'none';
+    document.getElementById('redirecting').style.display = 'block';
+    setTimeout(()=>{ window.location.href = destinationFor(g.role); }, 300);
+    return;
+  }
+  // Lien ouvert directement avec ?role=&t= (ex: caméra native du téléphone) : on traite pareil.
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('role') && params.get('t')) processScan(params.get('role'), params.get('t'));
+})();
 </script>
 </body>
 </html>

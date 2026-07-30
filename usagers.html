@@ -610,32 +610,36 @@ window.addEventListener('online', ()=>{ updateQueueBadge(); syncQueue(false); })
 window.addEventListener('offline', updateQueueBadge);
 
 /* ============================================================
- *  CONTRÔLE D'ACCÈS PAR JETON QR (rôle : enquêteur)
- *  Le lien scanné (ou cliqué depuis l'accueil) contient ?t=JETON.
- *  On le compare au jeton courant côté serveur avant d'ouvrir le
- *  formulaire. Hors-ligne ou lien sans jeton : on laisse passer
- *  (l'app est conçue pour fonctionner hors connexion).
+ *  CONTRÔLE D'ACCÈS PAR SESSION LOCALE (rôle : enquêteur)
+ *  L'accès a été validé une fois via le scan du QR sur l'accueil ;
+ *  il reste valable tant que l'appli est utilisée dans les 6 heures.
  * ============================================================ */
-const QR_ROLE = 'enqueteur';
-function getUrlToken(){ return new URLSearchParams(window.location.search).get('t') || ''; }
+const REQUIRED_ROLE = 'enqueteur';
+const GRANT_KEY = 'sz_grant';
+const INACTIVITY_LIMIT_MS = 6 * 60 * 60 * 1000;
+function loadGrant(){ try { return JSON.parse(localStorage.getItem(GRANT_KEY)); } catch(e){ return null; } }
+function saveGrant(g){ localStorage.setItem(GRANT_KEY, JSON.stringify(g)); }
 function bootForm(){
   startBackgroundGeolocation();
   renderSection(0);
   updateQueueBadge();
   syncQueue(false);
+  setInterval(()=>{ const g = loadGrant(); if (g){ g.lastActivity = Date.now(); saveGrant(g); } }, 5*60*1000);
 }
 function showAccessBlocked(){
   document.getElementById('fieldsRoot').innerHTML =
-    '<div class="group" style="text-align:center"><h2>⚠️ Lien expiré</h2>' +
-    '<p>Ce lien ou ce QR code n\'est plus à jour. Demandez le QR code actuel à l\'administrateur.</p></div>';
+    '<div class="group" style="text-align:center"><h2>⚠️ Accès non reconnu</h2>' +
+    '<p>Scannez le QR code « Enquêteur » depuis l\'accueil pour accéder à ce formulaire.</p>' +
+    '<p><a href="index.html">← Retour à l\'accueil</a></p></div>';
   const nav = document.querySelector('.nav-bar'); if (nav) nav.style.display = 'none';
 }
 (function(){
-  const urlToken = getUrlToken();
-  if (!navigator.onLine || !urlToken){ bootForm(); return; }
-  callApi('getQrToken', {role: QR_ROLE})
-    .then(res => { if (res && res.ok && res.token === urlToken) bootForm(); else showAccessBlocked(); })
-    .catch(()=> bootForm());
+  const g = loadGrant();
+  if (!g || g.role !== REQUIRED_ROLE || (Date.now() - g.lastActivity) > INACTIVITY_LIMIT_MS){
+    showAccessBlocked(); return;
+  }
+  g.lastActivity = Date.now(); saveGrant(g);
+  bootForm();
 })();
 </script>
 </body>

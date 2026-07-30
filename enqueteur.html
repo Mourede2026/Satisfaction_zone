@@ -27,25 +27,25 @@
   .card h2{margin:0 0 4px;font-size:1.15rem}
   .card p{margin:0;color:#6b7280;font-size:.9rem}
   .other{margin-top:36px;text-align:center}
-  .other a{color:#9aa5b1;text-decoration:underline;font-size:.8rem;margin:0 8px}
+  .other a{color:#9aa5b1;text-decoration:underline;font-size:.8rem;margin:0 8px;cursor:pointer}
   .blocked{max-width:420px;margin:80px auto;background:#fff;border-radius:16px;padding:30px 24px;text-align:center;box-shadow:0 1px 5px rgba(0,0,0,.08)}
   .blocked h2{color:#c0392b;margin-top:0}
 </style>
 </head>
 <body>
-  <div id="root">
+  <div id="root" style="display:none">
     <div class="logoRow"><img src="icon-192.png" alt="Logo"></div>
     <h1>🧑‍💼 Espace Enquêteur</h1>
     <p class="sub">Choisissez le formulaire à administrer</p>
 
     <div class="targets">
-      <a class="card" id="cardUsagers" href="usagers.html">
+      <a class="card" href="usagers.html">
         <span class="emoji">👩‍👦</span>
         <h2>Usagers (patients)</h2>
         <p>Questionnaire de satisfaction des usagers des centres de santé</p>
       </a>
 
-      <a class="card" id="cardCogecs" href="cogecs.html">
+      <a class="card" href="cogecs.html">
         <span class="emoji">👨‍👩‍👧‍👦</span>
         <h2>Membre COGECS</h2>
         <p>Questionnaire de satisfaction des membres du COGECS</p>
@@ -53,33 +53,32 @@
     </div>
 
     <div class="other">
-      <a href="index.html">← Retour à l'accueil</a>
+      <a onclick="rescan()">🔄 Scanner un autre code</a>
     </div>
   </div>
 
-<script src="config.js"></script>
+  <div id="blockedRoot" class="blocked" style="display:none">
+    <h2>⚠️ Accès non reconnu</h2>
+    <p>Scannez le QR code « Enquêteur » depuis l'accueil pour accéder à ce formulaire.</p>
+    <p><a href="index.html">← Retour à l'accueil</a></p>
+  </div>
+
 <script>
-function getUrlToken(){ return new URLSearchParams(window.location.search).get('t') || ''; }
-function propagateToken(token){
-  ['cardUsagers','cardCogecs'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (token) el.href = el.getAttribute('href').split('?')[0] + '?t=' + encodeURIComponent(token);
-  });
-}
-function showBlocked(){
-  document.getElementById('root').innerHTML =
-    '<div class="blocked"><h2>⚠️ Lien expiré</h2>' +
-    '<p>Ce lien ou ce QR code n\'est plus à jour. Demandez le QR code actuel à l\'administrateur.</p>' +
-    '<p><a href="index.html">← Retour à l\'accueil</a></p></div>';
-}
+const GRANT_KEY = 'sz_grant';
+const INACTIVITY_LIMIT_MS = 6 * 60 * 60 * 1000;
+function loadGrant(){ try { return JSON.parse(localStorage.getItem(GRANT_KEY)); } catch(e){ return null; } }
+function saveGrant(g){ localStorage.setItem(GRANT_KEY, JSON.stringify(g)); }
+function rescan(){ localStorage.removeItem(GRANT_KEY); window.location.href = 'index.html'; }
+
 (function(){
-  const urlToken = getUrlToken();
-  if (!urlToken){ return; } // accès direct sans jeton : on laisse voir les cartes normalement
-  if (!navigator.onLine){ propagateToken(urlToken); return; }
-  callApi('getQrToken', {role:'enqueteur'}).then(res=>{
-    if (res && res.ok && res.token === urlToken) propagateToken(urlToken);
-    else showBlocked();
-  }).catch(()=> propagateToken(urlToken));
+  const g = loadGrant();
+  if (!g || g.role !== 'enqueteur' || (Date.now() - g.lastActivity) > INACTIVITY_LIMIT_MS){
+    document.getElementById('blockedRoot').style.display = 'block';
+    return;
+  }
+  g.lastActivity = Date.now(); saveGrant(g); // fenêtre glissante de 6h
+  document.getElementById('root').style.display = 'block';
+  setInterval(()=>{ const gg = loadGrant(); if (gg){ gg.lastActivity = Date.now(); saveGrant(gg); } }, 5*60*1000);
 })();
 </script>
 </body>

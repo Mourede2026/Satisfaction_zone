@@ -1,0 +1,123 @@
+﻿Niveau,Libellé,Identifiant,Mot de passe,Département,Zone sanitaire,Commune
+commune,Commune de Abomey,commune.abomey,HBRPOI,Zou,Djidja-Abomey-Agbangnizoun,Abomey
+commune,Commune de Abomey-Calavi,commune.abomey-calavi,G8F1CB,Atlantique,Abomey-Calavi-So-ava,Abomey-Calavi
+commune,Commune de Adja-Ouèrè,commune.adja-ouere,FNO6B9,Plateau,Pobè-Kétou-Adja-ouèrè,Adja-Ouèrè
+commune,Commune de Adjarra,commune.adjarra,M80O2R,Ouémé,Akpro-missérété-Avrankou-Adjarra,Adjarra
+commune,Commune de Adjohoun,commune.adjohoun,AK1VRJ,Ouémé,Adjohoun-Bonou-Dangbo,Adjohoun
+commune,Commune de Agbangnizoun,commune.agbangnizoun,NVGFYG,Zou,Djidja-Abomey-Agbangnizoun,Agbangnizoun
+commune,Commune de Aguegues,commune.aguegues,WWQC38,Ouémé,Porto-Novo-Sèmè-kpodji-Aguégués,Aguegues
+commune,Commune de Akpro-Missereté,commune.akpro-misserete,HYF9SX,Ouémé,Akpro-missérété-Avrankou-Adjarra,Akpro-Missereté
+commune,Commune de Allada,commune.allada,MECOSF,Atlantique,Allada-Toffo-Zè,Allada
+commune,Commune de Aplahoué,commune.aplahoue,OGYR3X,Couffo,Aplahoué-Djakotomey-Dogbo,Aplahoué
+commune,Commune de Athieme,commune.athieme,KXWNRE,Mono,Lokossa-Athiémè,Athieme
+commune,Commune de Avrankou,commune.avrankou,K8PK3Y,Ouémé,Akpro-missérété-Avrankou-Adjarra,Avrankou
+commune,Commune de Banikoara,commune.banikoara,R9OUDO,Alibori,Banikoara,Banikoara
+commune,Commune de Bante,commune.bante,CUZREN,Collines,Savalou-Bantè,Bante
+commune,Commune de Bassila,commune.bassila,UN5Z3J,Donga,Bassila,Bassila
+commune,Commune de Bembèrèkè,commune.bembereke,QIP98Q,Borgou,Bembèrèkè-Sinendé,Bembèrèkè
+commune,Commune de Bohicon,commune.bohicon,1ZXOI6,Zou,Bohicon-Za-kpota-Zogbodomey,Bohicon
+commune,Commune de Bonou,commune.bonou,5FDHJK,Ouémé,Adjohoun-Bonou-Dangbo,Bonou
+commune,Commune de Bopa,commune.bopa,1EYY37,Mono,Comè-Grand popo-Houèyogbé-Bopa,Bopa
+commune,Commune de Boukoumbe,commune.boukoumbe,Q9AH8R,Atacora,Natitingou-Boukoumbé-Toucountouna,Boukoumbe
+commune,Commune de Cobly,commune.cobly,VHS1K3,Atacora,Tanguiéta-Cobly-Matéri,Cobly
+commune,Commune de Come,commune.come,AQ6L6G,Mono,Comè-Grand popo-Houèyogbé-Bopa,Come
+commune,Commune de Copargo,commune.copargo,T6MJXK,Donga,Djougou-Ouaké-Copargo,Copargo
+commune,Commune de Cotonou,commune.cotonou,87AU5B,Littoral,Cotonou (selon arrondissement),Cotonou
+commune,Commune de Covè,commune.cove,HXTPDP,Zou,Covè-Zagnanado-Ouinhi,Covè
+commune,Commune de Dangbo,commune.dangbo,FF5E8I,Ouémé,Adjohoun-Bonou-Dangbo,Dangbo
+commune,Commune de Dassa,commune.dassa,I49KQ7,Collines,Dassa-Glazoué,Dassa
+commune,Commune de Djakotome,commune.djakotome,1N8MTZ,Couffo,Aplahoué-Djakotomey-Dogbo,Djakotome
+commune,Commune de Djidja,commune.djidja,X272HP,Zou,Djidja-Abomey-Agbangnizoun,Djidja
+commune,Commune de Djougou,commune.djougou,OEVB9O,Donga,Djougou-Ouaké-Copargo,Djougou
+commune,Commune de Dogbo,commune.dogbo,OAEDOE,Couffo,Aplahoué-Djakotomey-Dogbo,Dogbo
+commune,Commune de Glazoue,commune.glazoue,CVE6PR,Collines,Dassa-Glazoué,Glazoue
+commune,Commune de Gogounou,commune.gogounou,5N8I4P,Alibori,Kandi-Gogounou-Ségbana,Gogounou
+commune,Commune de Grand-Popo,commune.grand-popo,40MGG1,Mono,Comè-Grand popo-Houèyogbé-Bopa,Grand-Popo
+commune,Commune de Houeyogbe,commune.houeyogbe,W103DG,Mono,Comè-Grand popo-Houèyogbé-Bopa,Houeyogbe
+commune,Commune de Ifangni,commune.ifangni,DZVGPM,Plateau,Sakété-Ifangni,Ifangni
+commune,Commune de Kalale,commune.kalale,M82I1L,Borgou,Nikki-Kalalé-Pèrèrè,Kalale
+commune,Commune de Kandi,commune.kandi,R3PE29,Alibori,Kandi-Gogounou-Ségbana,Kandi
+commune,Commune de Karimama,commune.karimama,GD8AFP,Alibori,Malanville-Karimama,Karimama
+commune,Commune de Klouékanmè,commune.klouekanme,K054NZ,Couffo,Klouékamè-Toviklin-Lalo,Klouékanmè
+commune,Commune de Kouande,commune.kouande,DKYAYQ,Atacora,Kouandé-Péhunco-Kérou,Kouande
+commune,Commune de Kpomasse,commune.kpomasse,3S195J,Atlantique,Ouidah-Kpomassè-Tori-Bossito,Kpomasse
+commune,Commune de Kérou,commune.kerou,MSND8D,Atacora,Kouandé-Péhunco-Kérou,Kérou
+commune,Commune de Kétou,commune.ketou,UDD467,Plateau,Pobè-Kétou-Adja-ouèrè,Kétou
+commune,Commune de Lalo,commune.lalo,KD6FLE,Couffo,Klouékamè-Toviklin-Lalo,Lalo
+commune,Commune de Lokossa,commune.lokossa,EPZHPC,Mono,Lokossa-Athiémè,Lokossa
+commune,Commune de Malanville,commune.malanville,F07UQN,Alibori,Malanville-Karimama,Malanville
+commune,Commune de Matéri,commune.materi,UPQZIT,Atacora,Tanguiéta-Cobly-Matéri,Matéri
+commune,Commune de N'Dali,commune.n-dali,3UEA3G,Borgou,N'Dali-Parakou,N'Dali
+commune,Commune de Natitingou,commune.natitingou,E8N6QI,Atacora,Natitingou-Boukoumbé-Toucountouna,Natitingou
+commune,Commune de Nikki,commune.nikki,WEPXSK,Borgou,Nikki-Kalalé-Pèrèrè,Nikki
+commune,Commune de Ouake,commune.ouake,28T7A9,Donga,Djougou-Ouaké-Copargo,Ouake
+commune,Commune de Ouesse,commune.ouesse,TGIQHG,Collines,Savè-Ouèssè,Ouesse
+commune,Commune de Ouidah,commune.ouidah,9JRSNV,Atlantique,Ouidah-Kpomassè-Tori-Bossito,Ouidah
+commune,Commune de Ouinhi,commune.ouinhi,NQ65QD,Zou,Covè-Zagnanado-Ouinhi,Ouinhi
+commune,Commune de Parakou,commune.parakou,F1RCAV,Borgou,N'Dali-Parakou,Parakou
+commune,Commune de Pehunco,commune.pehunco,IQK291,Atacora,Kouandé-Péhunco-Kérou,Pehunco
+commune,Commune de Pobè,commune.pobe,9AHEJ8,Plateau,Pobè-Kétou-Adja-ouèrè,Pobè
+commune,Commune de Porto-Novo,commune.porto-novo,CX9J1I,Ouémé,Porto-Novo-Sèmè-kpodji-Aguégués,Porto-Novo
+commune,Commune de Pèrèrè,commune.perere,CTXCWN,Borgou,Nikki-Kalalé-Pèrèrè,Pèrèrè
+commune,Commune de Sakete,commune.sakete,PGW90J,Plateau,Sakété-Ifangni,Sakete
+commune,Commune de Savalou,commune.savalou,PKL0BL,Collines,Savalou-Bantè,Savalou
+commune,Commune de Savè,commune.save,V0PRKG,Collines,Savè-Ouèssè,Savè
+commune,Commune de Segbana,commune.segbana,YC4OM3,Alibori,Kandi-Gogounou-Ségbana,Segbana
+commune,Commune de Seme-Kpodji,commune.seme-kpodji,WTOOBM,Ouémé,Porto-Novo-Sèmè-kpodji-Aguégués,Seme-Kpodji
+commune,Commune de Sinende,commune.sinende,ZVRERW,Borgou,Bembèrèkè-Sinendé,Sinende
+commune,Commune de So-Ava,commune.so-ava,6Z8VBH,Atlantique,Abomey-Calavi-So-ava,So-Ava
+commune,Commune de Tanguieta,commune.tanguieta,QLQCG1,Atacora,Tanguiéta-Cobly-Matéri,Tanguieta
+commune,Commune de Tchaourou,commune.tchaourou,WU16HY,Borgou,Tchaourou,Tchaourou
+commune,Commune de Toffo,commune.toffo,MQC1A7,Atlantique,Allada-Toffo-Zè,Toffo
+commune,Commune de Tori-Bossito,commune.tori-bossito,8MX1EV,Atlantique,Ouidah-Kpomassè-Tori-Bossito,Tori-Bossito
+commune,Commune de Toukountouna,commune.toukountouna,UHT6T0,Atacora,Natitingou-Boukoumbé-Toucountouna,Toukountouna
+commune,Commune de Toviklin,commune.toviklin,UZS9IM,Couffo,Klouékamè-Toviklin-Lalo,Toviklin
+commune,Commune de Za-Kpota,commune.za-kpota,0YLTZ9,Zou,Bohicon-Za-kpota-Zogbodomey,Za-Kpota
+commune,Commune de Zagnanado,commune.zagnanado,ATSN1U,Zou,Covè-Zagnanado-Ouinhi,Zagnanado
+commune,Commune de Ze,commune.ze,322N64,Atlantique,Allada-Toffo-Zè,Ze
+commune,Commune de Zogbodomey,commune.zogbodomey,KFS6VF,Zou,Bohicon-Za-kpota-Zogbodomey,Zogbodomey
+zone,Zone sanitaire Abomey-Calavi-So-ava,zone.abomey-calavi-so-ava,PTOMJB,Atlantique,Abomey-Calavi-So-ava,
+zone,Zone sanitaire Adjohoun-Bonou-Dangbo,zone.adjohoun-bonou-dangbo,CP4E30,Ouémé,Adjohoun-Bonou-Dangbo,
+zone,Zone sanitaire Akpro-missérété-Avrankou-Adjarra,zone.akpro-misserete-avrankou-adjarra,MY5ZPJ,Ouémé,Akpro-missérété-Avrankou-Adjarra,
+zone,Zone sanitaire Allada-Toffo-Zè,zone.allada-toffo-ze,AG1OL7,Atlantique,Allada-Toffo-Zè,
+zone,Zone sanitaire Aplahoué-Djakotomey-Dogbo,zone.aplahoue-djakotomey-dogbo,3D9PH3,Couffo,Aplahoué-Djakotomey-Dogbo,
+zone,Zone sanitaire Banikoara,zone.banikoara,I379U2,Alibori,Banikoara,
+zone,Zone sanitaire Bassila,zone.bassila,6192K4,Donga,Bassila,
+zone,Zone sanitaire Bembèrèkè-Sinendé,zone.bembereke-sinende,2QPR75,Borgou,Bembèrèkè-Sinendé,
+zone,Zone sanitaire Bohicon-Za-kpota-Zogbodomey,zone.bohicon-za-kpota-zogbodomey,PR2ESP,Zou,Bohicon-Za-kpota-Zogbodomey,
+zone,Zone sanitaire Comè-Grand popo-Houèyogbé-Bopa,zone.come-grand-popo-houeyogbe-bopa,RVU8FI,Mono,Comè-Grand popo-Houèyogbé-Bopa,
+zone,Zone sanitaire Cotonou (selon arrondissement),zone.cotonou-selon-arrondissement,JOYJNE,Littoral,Cotonou (selon arrondissement),
+zone,Zone sanitaire Covè-Zagnanado-Ouinhi,zone.cove-zagnanado-ouinhi,00V830,Zou,Covè-Zagnanado-Ouinhi,
+zone,Zone sanitaire Dassa-Glazoué,zone.dassa-glazoue,DN0YBY,Collines,Dassa-Glazoué,
+zone,Zone sanitaire Djidja-Abomey-Agbangnizoun,zone.djidja-abomey-agbangnizoun,4AWTY0,Zou,Djidja-Abomey-Agbangnizoun,
+zone,Zone sanitaire Djougou-Ouaké-Copargo,zone.djougou-ouake-copargo,88O5OR,Donga,Djougou-Ouaké-Copargo,
+zone,Zone sanitaire Kandi-Gogounou-Ségbana,zone.kandi-gogounou-segbana,15BYVZ,Alibori,Kandi-Gogounou-Ségbana,
+zone,Zone sanitaire Klouékamè-Toviklin-Lalo,zone.klouekame-toviklin-lalo,K3I8BZ,Couffo,Klouékamè-Toviklin-Lalo,
+zone,Zone sanitaire Kouandé-Péhunco-Kérou,zone.kouande-pehunco-kerou,BF1I3L,Atacora,Kouandé-Péhunco-Kérou,
+zone,Zone sanitaire Lokossa-Athiémè,zone.lokossa-athieme,DQYUN3,Mono,Lokossa-Athiémè,
+zone,Zone sanitaire Malanville-Karimama,zone.malanville-karimama,UVYR0Q,Alibori,Malanville-Karimama,
+zone,Zone sanitaire N'Dali-Parakou,zone.n-dali-parakou,F4B8DW,Borgou,N'Dali-Parakou,
+zone,Zone sanitaire Natitingou-Boukoumbé-Toucountouna,zone.natitingou-boukoumbe-toucountouna,OECBPM,Atacora,Natitingou-Boukoumbé-Toucountouna,
+zone,Zone sanitaire Nikki-Kalalé-Pèrèrè,zone.nikki-kalale-perere,BJPI4H,Borgou,Nikki-Kalalé-Pèrèrè,
+zone,Zone sanitaire Ouidah-Kpomassè-Tori-Bossito,zone.ouidah-kpomasse-tori-bossito,N3QXKH,Atlantique,Ouidah-Kpomassè-Tori-Bossito,
+zone,Zone sanitaire Pobè-Kétou-Adja-ouèrè,zone.pobe-ketou-adja-ouere,KTGBTY,Plateau,Pobè-Kétou-Adja-ouèrè,
+zone,Zone sanitaire Porto-Novo-Sèmè-kpodji-Aguégués,zone.porto-novo-seme-kpodji-aguegues,ZMEPGT,Ouémé,Porto-Novo-Sèmè-kpodji-Aguégués,
+zone,Zone sanitaire Sakété-Ifangni,zone.sakete-ifangni,HCW81X,Plateau,Sakété-Ifangni,
+zone,Zone sanitaire Savalou-Bantè,zone.savalou-bante,E6VA05,Collines,Savalou-Bantè,
+zone,Zone sanitaire Savè-Ouèssè,zone.save-ouesse,G1X3J1,Collines,Savè-Ouèssè,
+zone,Zone sanitaire Tanguiéta-Cobly-Matéri,zone.tanguieta-cobly-materi,L7R843,Atacora,Tanguiéta-Cobly-Matéri,
+zone,Zone sanitaire Tchaourou,zone.tchaourou,1RUPFR,Borgou,Tchaourou,
+departement,Département Alibori,dept.alibori,2P3YVB,Alibori,,
+departement,Département Atacora,dept.atacora,5UL5NW,Atacora,,
+departement,Département Atlantique,dept.atlantique,QVRR9A,Atlantique,,
+departement,Département Borgou,dept.borgou,7MFP05,Borgou,,
+departement,Département Collines,dept.collines,9P452B,Collines,,
+departement,Département Couffo,dept.couffo,FSOZPT,Couffo,,
+departement,Département Donga,dept.donga,X497W1,Donga,,
+departement,Département Littoral,dept.littoral,9VW3RT,Littoral,,
+departement,Département Mono,dept.mono,QOHMUH,Mono,,
+departement,Département Ouémé,dept.oueme,8LMN4R,Ouémé,,
+departement,Département Plateau,dept.plateau,7SGMSO,Plateau,,
+departement,Département Zou,dept.zou,XLTA8I,Zou,,
+national,Niveau National,national,RCD9SI5G,,,
+admin,Administrateur,admin,AS442VLD,,,

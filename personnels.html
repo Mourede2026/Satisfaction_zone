@@ -561,28 +561,34 @@ window.addEventListener('online', ()=>{ updateQueueBadge(); syncQueue(false); })
 window.addEventListener('offline', updateQueueBadge);
 
 /* ============================================================
- *  CONTRÔLE D'ACCÈS PAR JETON QR (rôle : personnel)
+ *  CONTRÔLE D'ACCÈS PAR SESSION LOCALE (rôle : personnel)
  * ============================================================ */
-const QR_ROLE = 'personnel';
-function getUrlToken(){ return new URLSearchParams(window.location.search).get('t') || ''; }
+const REQUIRED_ROLE = 'personnel';
+const GRANT_KEY = 'sz_grant';
+const INACTIVITY_LIMIT_MS = 6 * 60 * 60 * 1000;
+function loadGrant(){ try { return JSON.parse(localStorage.getItem(GRANT_KEY)); } catch(e){ return null; } }
+function saveGrant(g){ localStorage.setItem(GRANT_KEY, JSON.stringify(g)); }
 function bootForm(){
   startBackgroundGeolocation();
   renderSection(0);
   updateQueueBadge();
   syncQueue(false);
+  setInterval(()=>{ const g = loadGrant(); if (g){ g.lastActivity = Date.now(); saveGrant(g); } }, 5*60*1000);
 }
 function showAccessBlocked(){
   document.getElementById('fieldsRoot').innerHTML =
-    '<div class="group" style="text-align:center"><h2>⚠️ Lien expiré</h2>' +
-    '<p>Ce lien ou ce QR code n\'est plus à jour. Demandez le QR code actuel à l\'administrateur.</p></div>';
+    '<div class="group" style="text-align:center"><h2>⚠️ Accès non reconnu</h2>' +
+    '<p>Scannez le QR code « Personnel de santé » depuis l\'accueil pour accéder à ce formulaire.</p>' +
+    '<p><a href="index.html">← Retour à l\'accueil</a></p></div>';
   const nav = document.querySelector('.nav-bar'); if (nav) nav.style.display = 'none';
 }
 (function(){
-  const urlToken = getUrlToken();
-  if (!navigator.onLine || !urlToken){ bootForm(); return; }
-  callApi('getQrToken', {role: QR_ROLE})
-    .then(res => { if (res && res.ok && res.token === urlToken) bootForm(); else showAccessBlocked(); })
-    .catch(()=> bootForm());
+  const g = loadGrant();
+  if (!g || g.role !== REQUIRED_ROLE || (Date.now() - g.lastActivity) > INACTIVITY_LIMIT_MS){
+    showAccessBlocked(); return;
+  }
+  g.lastActivity = Date.now(); saveGrant(g);
+  bootForm();
 })();
 </script>
 </body>
