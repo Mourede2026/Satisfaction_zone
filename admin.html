@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{--brand:#0f4c81;}
   .sessionBadge{font-size:.72rem;background:rgba(255,255,255,.15);border-radius:999px;padding:4px 10px;margin-left:10px}
@@ -38,6 +39,7 @@
   .qrGridAdmin{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .qrCardAdmin{text-align:center}
   .qrCardAdmin .qrBox{display:flex;justify-content:center;margin:12px 0;min-height:150px;align-items:center}
+  .qrCardAdmin .qrBox canvas, .qrCardAdmin .qrBox img{width:220px !important;height:220px !important}
   .qrCardAdmin button{margin:4px;padding:8px 12px;border-radius:8px;border:1px solid var(--brand);background:#fff;color:var(--brand);font-size:.8rem;cursor:pointer}
   .qrCardAdmin button:disabled{opacity:.4;cursor:default}
   .scopeNote{font-size:.78rem;color:#9aa5b1;margin-bottom:10px}
@@ -87,6 +89,12 @@
   .infoLine{font-size:.8rem;color:#6b7280;margin-bottom:10px}
   .emptyNote{font-size:.85rem;color:#9aa5b1;font-style:italic;padding:20px 0;text-align:center}
   .catCanvasWrap canvas{max-height:none}
+  .filtersGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px}
+  .filtersGrid label{display:block;font-size:.78rem;color:#6b7280;font-weight:600;margin-bottom:4px}
+  .filtersGrid select{width:100%;padding:8px 10px;border:1px solid #dfe4ea;border-radius:8px;font-size:.85rem}
+  .satCanvasWrap{position:relative;width:100%;height:440px;overflow-x:auto;overflow-y:hidden}
+  .satCanvasWrap canvas{height:100% !important}
+  @media (max-width:700px){ .filtersGrid{grid-template-columns:1fr 1fr} }
 
   #mapEnqueteurs{height:420px;border-radius:12px;overflow:hidden}
   .mapBar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
@@ -129,6 +137,7 @@
 
   <div class="tabs">
     <div class="tab active" data-panel="p-commune" onclick="showPanel('p-commune', this)">📍 Par commune</div>
+    <div class="tab" data-panel="p-satisfaction" onclick="showPanel('p-satisfaction', this)">📈 Satisfaction (filtres)</div>
     <div class="tab" data-panel="p-global" onclick="showPanel('p-global', this)">🌍 Global</div>
     <div class="tab" data-panel="p-usagers" onclick="showPanel('p-usagers', this)">👩‍👦 Usagers</div>
     <div class="tab" data-panel="p-personnels" onclick="showPanel('p-personnels', this)">👩‍⚕️ Personnel</div>
@@ -162,6 +171,40 @@
       <div class="infoLine" id="communeCogecsInfo"></div>
       <div class="catCanvasWrap"><canvas id="chartCommuneCogecs"></canvas></div>
       <div class="emptyNote" id="communeCogecsEmpty" style="display:none">Aucune réponse COGECS pour cette commune.</div>
+    </div>
+  </div>
+
+  <div id="p-satisfaction" class="panel">
+    <div class="card">
+      <h2>📈 Filtrer la satisfaction par niveau géographique</h2>
+      <div class="filtersGrid">
+        <div><label>Département</label><select id="satDept"><option value="">Tous</option></select></div>
+        <div><label>Zone sanitaire</label><select id="satZone"><option value="">Toutes</option></select></div>
+        <div><label>Commune</label><select id="satCommune"><option value="">Toutes</option></select></div>
+        <div><label>Formation sanitaire</label><select id="satStructure"><option value="">Toutes</option></select></div>
+      </div>
+      <div class="scopeNote">Chaque bande est comparée à la moyenne (ligne pointillée) de l'ensemble affiché : verte si ≥ à la moyenne, rouge si en dessous. La satisfaction ne dépasse jamais 100%.</div>
+    </div>
+
+    <div class="card">
+      <h2>👩‍👦 Usagers — satisfaction par thème</h2>
+      <div class="infoLine" id="satUsagersInfo"></div>
+      <div class="satCanvasWrap"><canvas id="chartSatUsagers"></canvas></div>
+      <div class="emptyNote" id="satUsagersEmpty" style="display:none">Aucune réponse pour cette sélection.</div>
+    </div>
+
+    <div class="card">
+      <h2>👩‍⚕️ Personnel soignant — satisfaction par thème</h2>
+      <div class="infoLine" id="satPersonnelsInfo"></div>
+      <div class="satCanvasWrap"><canvas id="chartSatPersonnels"></canvas></div>
+      <div class="emptyNote" id="satPersonnelsEmpty" style="display:none">Aucune réponse pour cette sélection.</div>
+    </div>
+
+    <div class="card">
+      <h2>👨‍👩‍👧‍👦 COGECS — satisfaction par thème</h2>
+      <div class="infoLine" id="satCogecsInfo"></div>
+      <div class="satCanvasWrap"><canvas id="chartSatCogecs"></canvas></div>
+      <div class="emptyNote" id="satCogecsEmpty" style="display:none">Aucune réponse pour cette sélection.</div>
     </div>
   </div>
 
@@ -255,6 +298,37 @@
     </div>
 
     <div class="card">
+      <h2>🧪 Tester un QR code</h2>
+      <div class="scopeNote">Vérifiez qu'un code fonctionne avant de le distribuer — ceci ne fait que
+        contrôler sa validité, ça n'ouvre aucun formulaire et n'affecte pas votre session.</div>
+      <div id="testerReader" style="max-width:280px;margin:0 auto;border-radius:12px;overflow:hidden"></div>
+      <div style="text-align:center;margin-top:10px">
+        <button id="testerToggle" onclick="toggleTester()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Activer la caméra</button>
+      </div>
+      <div id="testerResult" style="text-align:center;font-size:.9rem;margin-top:12px;min-height:20px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📥 Attribuer un QR existant à une cible</h2>
+      <div class="scopeNote">Utilisez un QR code que cette application n'a pas généré (déjà imprimé,
+        venant d'un autre système, etc.). Une fois scanné et confirmé, c'est CE code qui donnera accès
+        à la cible choisie — l'ancien code (ou QR généré ici) cesse de fonctionner pour cette cible.</div>
+      <div style="max-width:280px;margin:10px auto 0">
+        <label style="display:block;font-size:.8rem;color:#6b7280;font-weight:600;margin-bottom:4px">Cible concernée</label>
+        <select id="assignRole" style="width:100%;padding:9px;border:1px solid #dfe4ea;border-radius:8px;margin-bottom:10px">
+          <option value="enqueteur">Enquêteur (Usagers + COGECS)</option>
+          <option value="personnel">Personnel de santé</option>
+        </select>
+      </div>
+      <div id="assignReader" style="max-width:280px;margin:0 auto;border-radius:12px;overflow:hidden"></div>
+      <div style="text-align:center;margin-top:10px">
+        <button id="assignToggle" onclick="toggleAssignScanner()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Activer la caméra</button>
+        <button id="assignConfirmBtn" onclick="confirmAssignCode()" style="display:none;padding:10px 16px;border-radius:10px;border:none;background:var(--brand);color:#fff;cursor:pointer;margin-left:8px">✅ Confirmer et activer</button>
+      </div>
+      <div id="assignMsg" style="text-align:center;font-size:.9rem;margin-top:12px;min-height:20px"></div>
+    </div>
+
+    <div class="card">
       <h2>👤 Mon compte</h2>
       <div class="scopeNote" id="monCompteInfo">—</div>
       <button onclick="openPassModal()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Changer mon mot de passe</button>
@@ -285,6 +359,7 @@
       <option value="zone">Zone sanitaire</option>
       <option value="departement">Département</option>
       <option value="national">National</option>
+      <option value="superviseur">Superviseur (tout voir, sans Comptes &amp; QR)</option>
       <option value="admin">Administrateur</option>
     </select>
     <input type="text" id="editDept" placeholder="Département">
@@ -419,6 +494,124 @@ function enterDashboard(){
   catch(e){ window.location.href = 'index.html'; }
 })();
 
+function toggleTester(){
+  if (testerActive){ stopTester(); return; }
+  startTester();
+}
+let testerQr = null;
+let testerActive = false;
+let testerLastDecoded = '', testerLastAt = 0;
+
+function extractCandidateCodeAdmin(text){
+  try { const url = new URL(text); return url.searchParams.get('code') || url.searchParams.get('t') || text; }
+  catch(e){ return text; }
+}
+
+function startTester(){
+  const btn = document.getElementById('testerToggle');
+  const result = document.getElementById('testerResult');
+  result.textContent = '';
+  testerQr = new Html5Qrcode('testerReader');
+  Html5Qrcode.getCameras().then(cameras=>{
+    const camId = cameras && cameras.length ? (cameras.find(c=>/back|arrière|rear/i.test(c.label))||cameras[cameras.length-1]).id : null;
+    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+    const started = camId
+      ? testerQr.start(camId, config, onTesterDecoded)
+      : testerQr.start({ facingMode: 'environment' }, config, onTesterDecoded);
+    started.then(()=>{ testerActive = true; btn.textContent = 'Arrêter la caméra'; })
+      .catch(()=>{ result.textContent = "Impossible d'accéder à la caméra."; result.style.color = '#c0392b'; });
+  }).catch(()=>{ result.textContent = 'Aucune caméra disponible.'; result.style.color = '#c0392b'; });
+}
+function stopTester(){
+  if (testerQr && testerActive){ testerQr.stop().then(()=>testerQr.clear()).catch(()=>{}); }
+  testerActive = false;
+  document.getElementById('testerToggle').textContent = 'Activer la caméra';
+}
+function onTesterDecoded(decodedText){
+  const now = Date.now();
+  if (decodedText === testerLastDecoded && (now - testerLastAt) < 3000) return;
+  testerLastDecoded = decodedText; testerLastAt = now;
+  const result = document.getElementById('testerResult');
+  result.textContent = 'Vérification...';
+  result.style.color = '#6b7280';
+  callApi('matchQrCode', {text: extractCandidateCodeAdmin(decodedText)}).then(res=>{
+    if (res && res.ok){
+      const roleLabel = res.role === 'enqueteur' ? 'Enquêteur (Usagers + COGECS)' : 'Personnel de santé';
+      result.textContent = '✅ Code valide — donnerait accès à : ' + roleLabel;
+      result.style.color = '#1a9e5c';
+    } else {
+      result.textContent = '❌ ' + ((res && res.error) || "Ce code ne correspond à aucune cible active.");
+      result.style.color = '#c0392b';
+    }
+  }).catch(()=>{
+    result.textContent = '⚠️ Impossible de vérifier (hors connexion ?).';
+    result.style.color = '#c0392b';
+  });
+}
+
+// ------------------------------------------------------------------
+// Attribuer un QR EXTERNE (que l'application n'a pas généré) à une cible
+// ------------------------------------------------------------------
+let assignQr = null;
+let assignActive = false;
+let assignCapturedCode = null;
+let assignLastDecoded = '', assignLastAt = 0;
+
+function toggleAssignScanner(){
+  if (assignActive){ stopAssignScanner(); return; }
+  startAssignScanner();
+}
+function startAssignScanner(){
+  const msg = document.getElementById('assignMsg');
+  msg.textContent = ''; assignCapturedCode = null;
+  document.getElementById('assignConfirmBtn').style.display = 'none';
+  assignQr = new Html5Qrcode('assignReader');
+  Html5Qrcode.getCameras().then(cameras=>{
+    const camId = cameras && cameras.length ? (cameras.find(c=>/back|arrière|rear/i.test(c.label))||cameras[cameras.length-1]).id : null;
+    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+    const started = camId
+      ? assignQr.start(camId, config, onAssignDecoded)
+      : assignQr.start({ facingMode: 'environment' }, config, onAssignDecoded);
+    started.then(()=>{ assignActive = true; document.getElementById('assignToggle').textContent = 'Arrêter la caméra'; })
+      .catch(()=>{ msg.textContent = "Impossible d'accéder à la caméra."; msg.style.color='#c0392b'; });
+  }).catch(()=>{ msg.textContent = 'Aucune caméra disponible.'; msg.style.color='#c0392b'; });
+}
+function stopAssignScanner(){
+  if (assignQr && assignActive){ assignQr.stop().then(()=>assignQr.clear()).catch(()=>{}); }
+  assignActive = false;
+  document.getElementById('assignToggle').textContent = 'Activer la caméra';
+}
+function onAssignDecoded(decodedText){
+  const now = Date.now();
+  if (decodedText === assignLastDecoded && (now - assignLastAt) < 3000) return;
+  assignLastDecoded = decodedText; assignLastAt = now;
+  assignCapturedCode = extractCandidateCodeAdmin(decodedText);
+  const msg = document.getElementById('assignMsg');
+  const preview = assignCapturedCode.length > 40 ? assignCapturedCode.slice(0,18) + '…' + assignCapturedCode.slice(-14) : assignCapturedCode;
+  msg.textContent = 'Code capturé : ' + preview;
+  msg.style.color = '#6b7280';
+  document.getElementById('assignConfirmBtn').style.display = 'inline-block';
+  stopAssignScanner();
+}
+function confirmAssignCode(){
+  if (!assignCapturedCode){ return; }
+  const role = document.getElementById('assignRole').value;
+  const msg = document.getElementById('assignMsg');
+  msg.textContent = 'Enregistrement...'; msg.style.color = '#6b7280';
+  callApi('setQrCode', {token: session.token, role: role, code: assignCapturedCode}, null).then(res=>{
+    if (res && res.ok){
+      msg.textContent = '✅ Ce code est maintenant celui qui donne accès à : ' + (role==='enqueteur' ? 'Enquêteur (Usagers + COGECS)' : 'Personnel de santé') + '. Les anciens liens/QR pour cette cible ne fonctionnent plus.';
+      msg.style.color = '#1a9e5c';
+      document.getElementById('assignConfirmBtn').style.display = 'none';
+      assignCapturedCode = null;
+      loadQrCodes(); // rafraîchit aussi l'aperçu QR standard (montre désormais ce code)
+    } else {
+      msg.textContent = '❌ ' + ((res && res.error) || 'Échec de l\'enregistrement.');
+      msg.style.color = '#c0392b';
+    }
+  }).catch(()=>{ msg.textContent = 'Erreur de connexion.'; msg.style.color = '#c0392b'; });
+}
+
 function logout(){
   sessionStorage.removeItem('sz_admin_session');
   window.location.href = 'index.html';
@@ -435,8 +628,15 @@ function drawQr(elId, role, token){
   const el = document.getElementById(elId);
   el.innerHTML = '';
   const target = (role === 'enqueteur') ? 'enqueteur.html' : 'personnels.html';
-  const url = absoluteUrl(target) + '?t=' + encodeURIComponent(token);
-  qrObjs[elId] = new QRCode(el, { text: url, width: 150, height: 150, colorDark:'#0f4c81' });
+  const url = absoluteUrl(target) + '?role=' + encodeURIComponent(role) + '&code=' + encodeURIComponent(token);
+  qrObjs[elId] = new QRCode(el, {
+    text: url,
+    width: 400,
+    height: 400,
+    colorDark: '#0f4c81',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
 }
 function loadQrCodes(){
   callApi('getQrToken', {role:'enqueteur'}).then(res=>{ if (res && res.ok) drawQr('qrAdminEnqueteur','enqueteur', res.token); });
@@ -492,6 +692,7 @@ function showPanel(id, el){
   document.getElementById(id).classList.add('active');
   el.classList.add('active');
   if (id === 'p-carte' && leafletMap) setTimeout(() => leafletMap.invalidateSize(), 100);
+  if (id === 'p-satisfaction') setTimeout(renderSatisfactionView, 50);
 }
 
 function loadData(first){
@@ -503,12 +704,13 @@ function loadData(first){
 function barChart(canvasId, labels, counts, scores, label1, label2){
   const ctx = document.getElementById(canvasId).getContext('2d');
   if (charts[canvasId]) charts[canvasId].destroy();
+  const cappedScores = scores.map(s => (s === null || s === undefined) ? null : Math.min(100, s));
   charts[canvasId] = new Chart(ctx, {
     data: {
       labels: labels,
       datasets: [
         { type:'bar', label: label1, data: counts, backgroundColor:'#0f4c81', yAxisID:'y' },
-        { type:'line', label: label2, data: scores, borderColor:'#e08e0b', backgroundColor:'#e08e0b', yAxisID:'y1', tension:.3 }
+        { type:'line', label: label2, data: cappedScores, borderColor:'#e08e0b', backgroundColor:'#e08e0b', yAxisID:'y1', tension:.3 }
       ]
     },
     options: {
@@ -526,33 +728,33 @@ function fillTable(tblId, rows){
   const tbl = document.getElementById(tblId);
   let html = '<tr><th>Structure</th><th>Nb réponses</th><th>Satisfaction moyenne</th></tr>';
   rows.forEach(r=>{
-    html += `<tr><td>${r.label}</td><td>${r.count}</td><td>${r.avgScore!==null?r.avgScore+'%':'–'}</td></tr>`;
+    const score = (r.avgScore !== null && r.avgScore !== undefined) ? Math.min(100, r.avgScore) : null;
+    html += `<tr><td>${r.label}</td><td>${r.count}</td><td>${score!==null?score+'%':'–'}</td></tr>`;
   });
   tbl.innerHTML = html;
 }
 
-function scoreColor(v){
-  if (v === null || v === undefined) return '#c9d0d8';
-  if (v >= 75) return '#1f9d55';
-  if (v >= 50) return '#e08e0b';
-  return '#c0392b';
-}
-
-/** Graphique horizontal : une barre par catégorie, coloriée selon le score */
+/** Graphique horizontal : une barre par catégorie, coloriée selon sa position
+ *  par rapport à la moyenne des catégories affichées (vert si >= moyenne,
+ *  rouge sinon) — jamais de valeur au-dessus de 100%. */
 function horizontalScoreChart(canvasId, labels, scores){
   const ctx = document.getElementById(canvasId).getContext('2d');
   if (charts[canvasId]) charts[canvasId].destroy();
   const el = document.getElementById(canvasId);
   el.parentElement.style.height = Math.max(160, labels.length * 34) + 'px';
   el.style.height = '100%';
+  const capped = scores.map(s => (s === null || s === undefined) ? null : Math.min(100, s));
+  const valid = capped.filter(s => s !== null);
+  const avg = valid.length ? valid.reduce((a,b)=>a+b,0) / valid.length : null;
+  const colors = capped.map(s => s === null ? '#c9d0d8' : (avg !== null && s >= avg ? '#1f9d55' : '#c0392b'));
   charts[canvasId] = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
       datasets: [{
         label: 'Satisfaction (%)',
-        data: scores,
-        backgroundColor: scores.map(scoreColor),
+        data: capped,
+        backgroundColor: colors,
         borderRadius: 6
       }]
     },
@@ -687,6 +889,171 @@ function renderCarteEnqueteurs(){
   document.getElementById('tblCarteEnqueteurs').innerHTML = html;
 }
 
+
+// ------------------------------------------------------------------
+// ONGLET "Satisfaction (filtres)" — Structure / Commune / Zone / Département / National
+// ------------------------------------------------------------------
+const REFERENTIEL_COMMUNES = {"Banikoara": {"departement": "Alibori", "zone": "Banikoara"}, "Gogounou": {"departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana"}, "Kandi": {"departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana"}, "Segbana": {"departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana"}, "Karimama": {"departement": "Alibori", "zone": "Malanville-Karimama"}, "Malanville": {"departement": "Alibori", "zone": "Malanville-Karimama"}, "Kouande": {"departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou"}, "Pehunco": {"departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou"}, "Kérou": {"departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou"}, "Natitingou": {"departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna"}, "Boukoumbe": {"departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna"}, "Toukountouna": {"departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna"}, "Tanguieta": {"departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri"}, "Cobly": {"departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri"}, "Matéri": {"departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri"}, "Abomey-Calavi": {"departement": "Atlantique", "zone": "Abomey-Calavi-So-ava"}, "So-Ava": {"departement": "Atlantique", "zone": "Abomey-Calavi-So-ava"}, "Allada": {"departement": "Atlantique", "zone": "Allada-Toffo-Zè"}, "Toffo": {"departement": "Atlantique", "zone": "Allada-Toffo-Zè"}, "Ze": {"departement": "Atlantique", "zone": "Allada-Toffo-Zè"}, "Ouidah": {"departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito"}, "Kpomasse": {"departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito"}, "Tori-Bossito": {"departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito"}, "Bembèrèkè": {"departement": "Borgou", "zone": "Bembèrèkè-Sinendé"}, "Sinende": {"departement": "Borgou", "zone": "Bembèrèkè-Sinendé"}, "N'Dali": {"departement": "Borgou", "zone": "N'Dali-Parakou"}, "Parakou": {"departement": "Borgou", "zone": "N'Dali-Parakou"}, "Nikki": {"departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè"}, "Kalale": {"departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè"}, "Pèrèrè": {"departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè"}, "Tchaourou": {"departement": "Borgou", "zone": "Tchaourou"}, "Dassa": {"departement": "Collines", "zone": "Dassa-Glazoué"}, "Glazoue": {"departement": "Collines", "zone": "Dassa-Glazoué"}, "Savalou": {"departement": "Collines", "zone": "Savalou-Bantè"}, "Bante": {"departement": "Collines", "zone": "Savalou-Bantè"}, "Savè": {"departement": "Collines", "zone": "Savè-Ouèssè"}, "Ouesse": {"departement": "Collines", "zone": "Savè-Ouèssè"}, "Aplahoué": {"departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo"}, "Djakotome": {"departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo"}, "Dogbo": {"departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo"}, "Klouékanmè": {"departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo"}, "Toviklin": {"departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo"}, "Lalo": {"departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo"}, "Bassila": {"departement": "Donga", "zone": "Bassila"}, "Djougou": {"departement": "Donga", "zone": "Djougou-Ouaké-Copargo"}, "Ouake": {"departement": "Donga", "zone": "Djougou-Ouaké-Copargo"}, "Copargo": {"departement": "Donga", "zone": "Djougou-Ouaké-Copargo"}, "Cotonou": {"departement": "Littoral", "zone": "Cotonou (selon arrondissement)"}, "Athieme": {"departement": "Mono", "zone": "Lokossa-Athiémè"}, "Lokossa": {"departement": "Mono", "zone": "Lokossa-Athiémè"}, "Bopa": {"departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa"}, "Come": {"departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa"}, "Grand-Popo": {"departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa"}, "Houeyogbe": {"departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa"}, "Adjarra": {"departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra"}, "Akpro-Missereté": {"departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra"}, "Avrankou": {"departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra"}, "Adjohoun": {"departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo"}, "Bonou": {"departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo"}, "Dangbo": {"departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo"}, "Aguegues": {"departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués"}, "Porto-Novo": {"departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués"}, "Seme-Kpodji": {"departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués"}, "Adja-Ouèrè": {"departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè"}, "Kétou": {"departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè"}, "Pobè": {"departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè"}, "Ifangni": {"departement": "Plateau", "zone": "Sakété-Ifangni"}, "Sakete": {"departement": "Plateau", "zone": "Sakété-Ifangni"}, "Abomey": {"departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun"}, "Agbangnizoun": {"departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun"}, "Djidja": {"departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun"}, "Bohicon": {"departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey"}, "Za-Kpota": {"departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey"}, "Zogbodomey": {"departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey"}, "Covè": {"departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi"}, "Ouinhi": {"departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi"}, "Zagnanado": {"departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi"}};
+function communeDept(c){ return (REFERENTIEL_COMMUNES[c]||{}).departement || ''; }
+function communeZone(c){ return (REFERENTIEL_COMMUNES[c]||{}).zone || ''; }
+
+function fillSelectPlain(id, values){
+  const sel = document.getElementById(id);
+  const prev = sel.value;
+  const allLabel = id === 'satDept' ? 'Tous' : (id === 'satZone' ? 'Toutes' : (id === 'satCommune' ? 'Toutes' : 'Toutes'));
+  sel.innerHTML = '<option value="">' + allLabel + '</option>' + values.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (values.includes(prev)) sel.value = prev;
+}
+
+function satFilters(){
+  return {
+    departement: document.getElementById('satDept').value,
+    zone: document.getElementById('satZone').value,
+    commune: document.getElementById('satCommune').value,
+    structure: document.getElementById('satStructure').value,
+  };
+}
+
+function allStructureEntries(){
+  if (!lastData || !lastData.structureReport) return [];
+  const out = [];
+  ['usagers','personnels','cogecs'].forEach(k => {
+    const sr = lastData.structureReport[k];
+    if (!sr || !sr.byStructure) return;
+    Object.keys(sr.byStructure).forEach(name => {
+      out.push({ structure: name, commune: sr.byStructure[name].commune });
+    });
+  });
+  return out;
+}
+
+function populateSatFilters(){
+  const all = allStructureEntries();
+  const f = satFilters();
+
+  const depts = new Set(), zonesAll = new Set(), communesAll = new Set();
+  all.forEach(a => {
+    if (!a.commune) return;
+    communesAll.add(a.commune);
+    const d = communeDept(a.commune), z = communeZone(a.commune);
+    if (d) depts.add(d);
+    if (z) zonesAll.add(z);
+  });
+  fillSelectPlain('satDept', Array.from(depts).sort((a,b)=>a.localeCompare(b,'fr')));
+
+  let zoneList = Array.from(zonesAll).filter(z => {
+    if (!f.departement) return true;
+    return Array.from(communesAll).some(c => communeZone(c) === z && communeDept(c) === f.departement);
+  });
+  fillSelectPlain('satZone', zoneList.sort((a,b)=>a.localeCompare(b,'fr')));
+
+  let communeList = Array.from(communesAll);
+  if (f.departement) communeList = communeList.filter(c => communeDept(c) === f.departement);
+  if (f.zone) communeList = communeList.filter(c => communeZone(c) === f.zone);
+  fillSelectPlain('satCommune', communeList.sort((a,b)=>a.localeCompare(b,'fr')));
+
+  let structList = all;
+  if (f.departement) structList = structList.filter(a => communeDept(a.commune) === f.departement);
+  if (f.zone) structList = structList.filter(a => communeZone(a.commune) === f.zone);
+  if (f.commune) structList = structList.filter(a => a.commune === f.commune);
+  const structNames = Array.from(new Set(structList.map(a => a.structure))).sort((a,b)=>a.localeCompare(b,'fr'));
+  fillSelectPlain('satStructure', structNames);
+}
+
+function computeFilteredCategoryScores(cible){
+  const sr = lastData.structureReport[cible];
+  if (!sr || !sr.byStructure) return { categories: [], scores: [], count: 0 };
+  const f = satFilters();
+  const cats = sr.categories;
+  const catSum = {}, catWeight = {};
+  cats.forEach(c => { catSum[c] = 0; catWeight[c] = 0; });
+  let totalCount = 0;
+  Object.keys(sr.byStructure).forEach(name => {
+    const e = sr.byStructure[name];
+    if (f.structure && name !== f.structure) return;
+    if (f.commune && e.commune !== f.commune) return;
+    if (f.zone && communeZone(e.commune) !== f.zone) return;
+    if (f.departement && communeDept(e.commune) !== f.departement) return;
+    totalCount += e.count;
+    cats.forEach(c => {
+      const v = e.categoryScores[c];
+      if (v !== null && v !== undefined) { catSum[c] += v * e.count; catWeight[c] += e.count; }
+    });
+  });
+  const scores = cats.map(c => catWeight[c] > 0 ? Math.min(100, Math.round((catSum[c] / catWeight[c]) * 10) / 10) : null);
+  return { categories: cats, scores, count: totalCount };
+}
+
+/** Barres verticales + ligne horizontale pointillée = moyenne de l'ensemble affiché.
+ *  Vert si la barre est >= à la moyenne, rouge si en dessous. Jamais > 100%. */
+function verticalScoreChartWithThreshold(canvasId, labels, scores){
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const valid = scores.filter(s => s !== null && s !== undefined);
+  const avg = valid.length ? Math.round((valid.reduce((a,b)=>a+b,0) / valid.length) * 10) / 10 : null;
+  const capped = scores.map(s => s === null ? null : Math.min(100, s));
+  const colors = capped.map(s => s === null ? '#c9d0d8' : (avg !== null && s >= avg ? '#1f9d55' : '#c0392b'));
+
+  const el = document.getElementById(canvasId);
+  el.style.minWidth = Math.max(560, labels.length * 90) + 'px';
+
+  charts[canvasId] = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        { type:'bar', label:'Satisfaction (%)', data: capped, backgroundColor: colors, borderRadius:5, order:2, maxBarThickness:50 },
+        { type:'line', label: avg !== null ? ('Moyenne (' + avg + '%)') : 'Moyenne', data: labels.map(()=>avg),
+           borderColor:'#12313B', borderWidth:2, borderDash:[7,5], pointRadius:0, tension:0, order:1 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { filter: item => item.text.indexOf('Moyenne') !== -1 } }
+      },
+      scales: {
+        y: { beginAtZero: true, max: 100, title: { display:true, text:'Satisfaction (%)' } },
+        x: { ticks: { autoSkip: false, maxRotation: 40, minRotation: 0, font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderSatCard(cible, canvasId, infoId, emptyId){
+  const canvasWrap = document.getElementById(canvasId).parentElement;
+  const emptyEl = document.getElementById(emptyId);
+  const infoEl = document.getElementById(infoId);
+  const { categories, scores, count } = computeFilteredCategoryScores(cible);
+  if (!count){
+    canvasWrap.style.display = 'none';
+    emptyEl.style.display = 'block';
+    infoEl.textContent = '';
+    return;
+  }
+  canvasWrap.style.display = 'block';
+  emptyEl.style.display = 'none';
+  infoEl.textContent = `${count} réponse${count>1?'s':''} sur la sélection active`;
+  verticalScoreChartWithThreshold(canvasId, categories, scores);
+}
+
+function renderSatisfactionView(){
+  if (!lastData) return;
+  renderSatCard('usagers', 'chartSatUsagers', 'satUsagersInfo', 'satUsagersEmpty');
+  renderSatCard('personnels', 'chartSatPersonnels', 'satPersonnelsInfo', 'satPersonnelsEmpty');
+  renderSatCard('cogecs', 'chartSatCogecs', 'satCogecsInfo', 'satCogecsEmpty');
+}
+
+['satDept','satZone','satCommune','satStructure'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    if (id === 'satDept'){ document.getElementById('satZone').value=''; document.getElementById('satCommune').value=''; document.getElementById('satStructure').value=''; }
+    if (id === 'satZone'){ document.getElementById('satCommune').value=''; document.getElementById('satStructure').value=''; }
+    if (id === 'satCommune'){ document.getElementById('satStructure').value=''; }
+    populateSatFilters();
+    renderSatisfactionView();
+  });
+});
+
 function renderData(d){
   if (!d || !d.ok){ document.getElementById('lastUpdate').textContent = 'Erreur : ' + (d && d.error || 'inconnue'); return; }
   lastData = d;
@@ -734,6 +1101,9 @@ function renderData(d){
 
   populateCommuneSelect(d.communeReport);
   renderCommuneView();
+
+  populateSatFilters();
+  renderSatisfactionView();
 
   populateDaySelect(d.gpsByDay);
   renderCarteEnqueteurs();

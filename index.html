@@ -106,27 +106,29 @@ function doLogin(){
 let html5QrCode = null;
 let scannerActive = false;
 
-function parseRoleAndToken(text){
+function extractCandidateCode(text){
   try {
     const url = new URL(text);
-    return { role: url.searchParams.get('role'), token: url.searchParams.get('t') };
-  } catch(e){ return { role: null, token: null }; }
+    return url.searchParams.get('code') || url.searchParams.get('t') || text;
+  } catch(e){ return text; } // pas une URL : on utilise le texte scanné tel quel (code externe)
 }
 
-function processScan(role, token){
+function processScan(rawText){
   const msg = document.getElementById('scanMsg');
-  if (!role || !token || (role !== 'enqueteur' && role !== 'personnel')){
+  const candidate = (rawText || '').trim();
+  if (!candidate){
     msg.textContent = 'QR code non reconnu.'; msg.className = 'err'; return;
   }
   msg.textContent = 'Vérification...'; msg.className = '';
-  callApi('getQrToken', {role: role}).then(res=>{
-    if (res && res.ok && res.token === token){
+  callApi('matchQrCode', {text: extractCandidateCode(candidate)}).then(res=>{
+    if (res && res.ok){
+      const role = res.role;
       saveGrant(role);
       msg.textContent = 'Accès validé, ouverture du formulaire…'; msg.className = 'ok';
       stopScanner();
       setTimeout(()=>{ window.location.href = destinationFor(role); }, 400);
     } else {
-      msg.textContent = 'Ce QR code n\'est plus à jour. Demandez le QR code actuel à l\'administrateur.';
+      msg.textContent = (res && res.error) || 'Ce QR code ne correspond à aucun accès actif.';
       msg.className = 'err';
     }
   }).catch(()=>{ msg.textContent = 'Impossible de vérifier le QR code (hors connexion ?).'; msg.className = 'err'; });
@@ -161,8 +163,7 @@ function onScanDecoded(decodedText){
   const now = Date.now();
   if (decodedText === lastDecoded && (now - lastDecodedAt) < 4000) return; // évite les doublons rafale
   lastDecoded = decodedText; lastDecodedAt = now;
-  const { role, token } = parseRoleAndToken(decodedText);
-  processScan(role, token);
+  processScan(decodedText);
 }
 
 // ---- Au chargement : reprise automatique si un accès est déjà valide ----
@@ -174,9 +175,8 @@ function onScanDecoded(decodedText){
     setTimeout(()=>{ window.location.href = destinationFor(g.role); }, 300);
     return;
   }
-  // Lien ouvert directement avec ?role=&t= (ex: caméra native du téléphone) : on traite pareil.
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('role') && params.get('t')) processScan(params.get('role'), params.get('t'));
+  // Lien ouvert directement avec des paramètres (ex: caméra native du téléphone) : on traite pareil.
+  if (window.location.search) processScan(window.location.href);
 })();
 </script>
 </body>
