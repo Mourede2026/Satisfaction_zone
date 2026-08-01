@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dashboard">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -90,6 +92,16 @@
   .emptyNote{font-size:.85rem;color:#9aa5b1;font-style:italic;padding:20px 0;text-align:center}
   .catCanvasWrap canvas{max-height:none}
   .filtersGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px}
+  .filtersGrid.cols5{grid-template-columns:repeat(5,1fr)}
+  .eyeBtn{border:none;background:none;cursor:pointer;font-size:1rem;margin-left:6px;vertical-align:middle;opacity:.7}
+  .eyeBtn:hover{opacity:1}
+  .adminOnly{display:none}
+  .detailBox{margin-top:14px;max-height:420px;overflow:auto}
+  table.detailTable{width:100%;border-collapse:collapse;font-size:.85rem}
+  table.detailTable th{text-align:left;background:#f4f6f8;padding:6px;position:sticky;top:0}
+  table.detailTable td{padding:6px;border-top:1px solid #eef1f4}
+  table.detailTable td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.detailTable td.detailGroupHeader{font-weight:700;background:#f4f6f8;padding-top:12px}
   .filtersGrid label{display:block;font-size:.78rem;color:#6b7280;font-weight:600;margin-bottom:4px}
   .filtersGrid select{width:100%;padding:8px 10px;border:1px solid #dfe4ea;border-radius:8px;font-size:.85rem}
   .satCanvasWrap{position:relative;width:100%;height:440px;overflow-x:auto;overflow-y:hidden}
@@ -110,7 +122,7 @@
   <h1>📊 Tableau de bord — Satisfaction Zones Sanitaires</h1>
   <div class="headerRight">
     <span class="sessionBadge" id="sessionBadge" style="display:none"></span>
-    <button class="linkBtn" id="changePassBtn" style="display:none" onclick="openPassModal()">Changer mon mot de passe</button>
+    <button class="linkBtn" id="changePassBtn" style="display:none" onclick="openPassModal()">Modifier mon compte</button>
     <button class="linkBtn" onclick="logout()">Se déconnecter</button>
     <a href="index.html">Accueil</a>
   </div>
@@ -127,6 +139,7 @@
     <span id="lastUpdate"></span>
     <button id="refreshBtn" onclick="loadData(false)">🔄 Actualiser</button>
   </div>
+  <div style="font-size:.75rem;color:#9aa5b1;margin:-10px 0 14px">🔍 Molette ou pincement pour zoomer sur un graphique, glisser pour déplacer, double-clic pour réinitialiser.</div>
 
   <div class="kpis">
     <div class="kpi"><div class="num" id="kpiUsagers">–</div><div class="lbl">👩‍👦 Réponses Usagers</div></div>
@@ -221,56 +234,77 @@
 
   <div id="p-usagers" class="panel">
     <div class="card">
-      <h2>Enregistrements et satisfaction par commune</h2>
+      <h2>Enregistrements et satisfaction par commune
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailUCommune', () => buildCommuneDetailTable('usagers'))">👁️</button></h2>
       <canvas id="chartUCommune"></canvas>
+      <div class="detailBox" id="detailUCommune" style="display:none"></div>
     </div>
     <div class="card">
-      <h2>Enregistrements et satisfaction par structure (centre de santé)</h2>
+      <h2>Enregistrements et satisfaction par structure (centre de santé)
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailUStructure', () => buildStructureDetailTable('usagers'))">👁️</button></h2>
       <canvas id="chartUStructure"></canvas>
       <table id="tblUStructure"></table>
+      <div class="detailBox" id="detailUStructure" style="display:none"></div>
     </div>
     <div class="card">
-      <h2>Enregistrements par enquêteur</h2>
+      <h2>Enregistrements par enquêteur
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailUEnqueteur', () => buildEnqueteurDetailTable('usagers'))">👁️</button></h2>
       <canvas id="chartUEnqueteur"></canvas>
+      <div class="detailBox" id="detailUEnqueteur" style="display:none"></div>
     </div>
   </div>
 
   <div id="p-personnels" class="panel">
     <div class="card">
-      <h2>Enregistrements et satisfaction par commune</h2>
+      <h2>Enregistrements et satisfaction par commune
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailPCommune', () => buildCommuneDetailTable('personnels'))">👁️</button></h2>
       <canvas id="chartPCommune"></canvas>
+      <div class="detailBox" id="detailPCommune" style="display:none"></div>
     </div>
     <div class="card">
-      <h2>Enregistrements et satisfaction par structure</h2>
+      <h2>Enregistrements et satisfaction par structure
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailPStructure', () => buildStructureDetailTable('personnels'))">👁️</button></h2>
       <canvas id="chartPStructure"></canvas>
       <table id="tblPStructure"></table>
+      <div class="detailBox" id="detailPStructure" style="display:none"></div>
     </div>
   </div>
 
   <div id="p-cogecs" class="panel">
     <div class="card">
-      <h2>Enregistrements et satisfaction par commune</h2>
+      <h2>Enregistrements et satisfaction par commune
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailCCommune', () => buildCommuneDetailTable('cogecs'))">👁️</button></h2>
       <canvas id="chartCCommune"></canvas>
+      <div class="detailBox" id="detailCCommune" style="display:none"></div>
     </div>
     <div class="card">
-      <h2>Enregistrements et satisfaction par structure</h2>
+      <h2>Enregistrements et satisfaction par structure
+        <button class="eyeBtn adminOnly" onclick="toggleEyeDetail('detailCStructure', () => buildStructureDetailTable('cogecs'))">👁️</button></h2>
       <canvas id="chartCStructure"></canvas>
       <table id="tblCStructure"></table>
+      <div class="detailBox" id="detailCStructure" style="display:none"></div>
     </div>
   </div>
 
   <div id="p-carte" class="panel">
-    <div class="card mapBar">
-      <label for="daySelect">📅 Jour de collecte</label>
-      <select id="daySelect" onchange="renderCarteEnqueteurs()"><option>Chargement…</option></select>
-    </div>
     <div class="card">
       <h2>🗺️ Position des enquêteurs (formulaire Usagers)</h2>
+      <div class="filtersGrid cols5">
+        <div><label>Mois de collecte</label><select id="carteMonth"><option value="">Tous les mois</option></select></div>
+        <div><label>Département</label><select id="carteDept"><option value="">Tous</option></select></div>
+        <div><label>Zone sanitaire</label><select id="carteZone"><option value="">Toutes</option></select></div>
+        <div><label>Commune</label><select id="carteCommune"><option value="">Toutes</option></select></div>
+        <div><label>Formation sanitaire</label><select id="carteStructure"><option value="">Toutes</option></select></div>
+      </div>
       <div class="infoLine" id="carteInfo"></div>
       <div id="mapEnqueteurs"></div>
-      <div class="emptyNote" id="carteEmpty" style="display:none">Aucune position GPS enregistrée pour ce jour.</div>
+      <div class="emptyNote" id="carteEmpty" style="display:none">Aucune position GPS pour cette sélection.</div>
+      <div id="carteLegend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:14px"></div>
     </div>
     <div class="card">
+      <h2>👥 Enquêteurs — résultat du filtre</h2>
+      <div class="scopeNote">Durée moyenne calculée à partir de l'heure de début et de fin de chaque collecte
+        (disponible seulement pour les réponses enregistrées après l'activation de ce suivi).</div>
       <table id="tblCarteEnqueteurs"></table>
     </div>
   </div>
@@ -280,7 +314,7 @@
       <h2>📱 QR codes d'accès</h2>
       <div class="scopeNote">Chaque QR ouvre directement le bon formulaire sur le téléphone qui le scanne.
         « Actualiser » génère un nouveau code et invalide l'ancien (les liens déjà partagés cessent de fonctionner).
-        Réservé aux comptes national / administrateur.</div>
+        Réservé au compte administrateur.</div>
       <div class="qrGridAdmin">
         <div class="qrCardAdmin">
           <h3>🧑‍💼 Enquêteur <small>(Usagers + COGECS)</small></h3>
@@ -311,8 +345,9 @@
     <div class="card">
       <h2>📥 Attribuer un QR existant à une cible</h2>
       <div class="scopeNote">Utilisez un QR code que cette application n'a pas généré (déjà imprimé,
-        venant d'un autre système, etc.). Une fois scanné et confirmé, c'est CE code qui donnera accès
-        à la cible choisie — l'ancien code (ou QR généré ici) cesse de fonctionner pour cette cible.</div>
+        venant d'un autre système, etc.). Dès qu'il est scanné, il remplace automatiquement — sans
+        confirmation supplémentaire — le code actif pour la cible choisie ci-dessous ; l'ancien
+        code (généré ici ou non) cesse aussitôt de fonctionner pour cette cible.</div>
       <div style="max-width:280px;margin:10px auto 0">
         <label style="display:block;font-size:.8rem;color:#6b7280;font-weight:600;margin-bottom:4px">Cible concernée</label>
         <select id="assignRole" style="width:100%;padding:9px;border:1px solid #dfe4ea;border-radius:8px;margin-bottom:10px">
@@ -321,9 +356,13 @@
         </select>
       </div>
       <div id="assignReader" style="max-width:280px;margin:0 auto;border-radius:12px;overflow:hidden"></div>
+      <div id="assignFileReaderHidden" style="display:none"></div>
       <div style="text-align:center;margin-top:10px">
         <button id="assignToggle" onclick="toggleAssignScanner()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Activer la caméra</button>
-        <button id="assignConfirmBtn" onclick="confirmAssignCode()" style="display:none;padding:10px 16px;border-radius:10px;border:none;background:var(--brand);color:#fff;cursor:pointer;margin-left:8px">✅ Confirmer et activer</button>
+      </div>
+      <div style="text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid #eef1f4">
+        <label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:6px">— ou importer une image du QR (reçue par WhatsApp, e-mail, etc.) —</label>
+        <input type="file" accept="image/*" id="assignFileInput" onchange="handleAssignFileUpload(event)">
       </div>
       <div id="assignMsg" style="text-align:center;font-size:.9rem;margin-top:12px;min-height:20px"></div>
     </div>
@@ -331,7 +370,7 @@
     <div class="card">
       <h2>👤 Mon compte</h2>
       <div class="scopeNote" id="monCompteInfo">—</div>
-      <button onclick="openPassModal()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Changer mon mot de passe</button>
+      <button onclick="openPassModal()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer">Modifier mon compte (identifiant / mot de passe)</button>
     </div>
 
     <div class="card">
@@ -447,13 +486,17 @@ function submitEditAccount(){
 
 <div class="modalOverlay" id="passModalOverlay">
   <div class="modalCard">
-    <h3>Changer mon mot de passe</h3>
+    <h3>Modifier mon compte</h3>
+    <label style="display:block;font-size:.75rem;color:#6b7280;font-weight:600;margin:4px 0 4px">Mot de passe actuel (requis dans tous les cas)</label>
     <input type="password" id="passOld" placeholder="Mot de passe actuel">
-    <input type="password" id="passNew1" placeholder="Nouveau mot de passe (6 caractères min.)">
+    <label style="display:block;font-size:.75rem;color:#6b7280;font-weight:600;margin:14px 0 4px">Nouvel identifiant (facultatif)</label>
+    <input type="text" id="newUsernameInput" placeholder="Laisser vide pour ne pas changer">
+    <label style="display:block;font-size:.75rem;color:#6b7280;font-weight:600;margin:14px 0 4px">Nouveau mot de passe (facultatif, 6 caractères min.)</label>
+    <input type="password" id="passNew1" placeholder="Laisser vide pour ne pas changer">
     <input type="password" id="passNew2" placeholder="Confirmer le nouveau mot de passe">
     <div class="modalActions">
       <button class="secondary" onclick="closePassModal()">Annuler</button>
-      <button class="primary" onclick="submitPasswordChange()">Enregistrer</button>
+      <button class="primary" onclick="submitAccountChange()">Enregistrer</button>
     </div>
     <div class="modalMsg" id="passModalMsg"></div>
   </div>
@@ -476,10 +519,11 @@ function enterDashboard(){
     (session.account.departement ? ' · Département : ' + session.account.departement : '') +
     (session.account.zone ? ' · Zone : ' + session.account.zone : '') +
     (session.account.commune ? ' · Commune : ' + session.account.commune : '');
-  const canManageQr = (session.account.level === 'admin' || session.account.level === 'national');
+  const canManageQr = (session.account.level === 'admin');
   document.getElementById('btnRefreshEnqueteur').disabled = !canManageQr;
   document.getElementById('btnRefreshPersonnel').disabled = !canManageQr;
   document.getElementById('tabComptes').style.display = canManageQr ? 'block' : 'none';
+  document.querySelectorAll('.adminOnly').forEach(el => { el.style.display = (session.account.level === 'admin') ? 'inline-block' : 'none'; });
   loadData(true);
   loadQrCodes();
   if (canManageQr) loadAccountsList();
@@ -554,7 +598,6 @@ function onTesterDecoded(decodedText){
 // ------------------------------------------------------------------
 let assignQr = null;
 let assignActive = false;
-let assignCapturedCode = null;
 let assignLastDecoded = '', assignLastAt = 0;
 
 function toggleAssignScanner(){
@@ -563,8 +606,7 @@ function toggleAssignScanner(){
 }
 function startAssignScanner(){
   const msg = document.getElementById('assignMsg');
-  msg.textContent = ''; assignCapturedCode = null;
-  document.getElementById('assignConfirmBtn').style.display = 'none';
+  msg.textContent = '';
   assignQr = new Html5Qrcode('assignReader');
   Html5Qrcode.getCameras().then(cameras=>{
     const camId = cameras && cameras.length ? (cameras.find(c=>/back|arrière|rear/i.test(c.label))||cameras[cameras.length-1]).id : null;
@@ -585,25 +627,40 @@ function onAssignDecoded(decodedText){
   const now = Date.now();
   if (decodedText === assignLastDecoded && (now - assignLastAt) < 3000) return;
   assignLastDecoded = decodedText; assignLastAt = now;
-  assignCapturedCode = extractCandidateCodeAdmin(decodedText);
-  const msg = document.getElementById('assignMsg');
-  const preview = assignCapturedCode.length > 40 ? assignCapturedCode.slice(0,18) + '…' + assignCapturedCode.slice(-14) : assignCapturedCode;
-  msg.textContent = 'Code capturé : ' + preview;
-  msg.style.color = '#6b7280';
-  document.getElementById('assignConfirmBtn').style.display = 'inline-block';
+  const code = extractCandidateCodeAdmin(decodedText);
   stopAssignScanner();
+  saveAssignedCode(code);
 }
-function confirmAssignCode(){
-  if (!assignCapturedCode){ return; }
+function handleAssignFileUpload(event){
+  const file = event.target.files[0];
+  event.target.value = ''; // permet de réimporter le même fichier plus tard si besoin
+  if (!file) return;
+  const msg = document.getElementById('assignMsg');
+  msg.textContent = "Lecture de l'image...";
+  msg.style.color = '#6b7280';
+  const fileScanner = new Html5Qrcode('assignFileReaderHidden');
+  fileScanner.scanFile(file, false)
+    .then(decodedText => {
+      fileScanner.clear();
+      saveAssignedCode(extractCandidateCodeAdmin(decodedText));
+    })
+    .catch(() => {
+      fileScanner.clear();
+      msg.textContent = '❌ Aucun QR code lisible dans cette image.';
+      msg.style.color = '#c0392b';
+    });
+}
+
+function saveAssignedCode(code){
   const role = document.getElementById('assignRole').value;
   const msg = document.getElementById('assignMsg');
-  msg.textContent = 'Enregistrement...'; msg.style.color = '#6b7280';
-  callApi('setQrCode', {token: session.token, role: role, code: assignCapturedCode}, null).then(res=>{
+  const preview = code.length > 40 ? code.slice(0,18) + '…' + code.slice(-14) : code;
+  msg.textContent = 'Code capturé (' + preview + ') — enregistrement...';
+  msg.style.color = '#6b7280';
+  callApi('setQrCode', {token: session.token, role: role, code: code}, null).then(res=>{
     if (res && res.ok){
-      msg.textContent = '✅ Ce code est maintenant celui qui donne accès à : ' + (role==='enqueteur' ? 'Enquêteur (Usagers + COGECS)' : 'Personnel de santé') + '. Les anciens liens/QR pour cette cible ne fonctionnent plus.';
+      msg.textContent = '✅ Remplacé : ce code donne maintenant accès à ' + (role==='enqueteur' ? 'Enquêteur (Usagers + COGECS)' : 'Personnel de santé') + '. L\'ancien code/QR pour cette cible ne fonctionne plus.';
       msg.style.color = '#1a9e5c';
-      document.getElementById('assignConfirmBtn').style.display = 'none';
-      assignCapturedCode = null;
       loadQrCodes(); // rafraîchit aussi l'aperçu QR standard (montre désormais ce code)
     } else {
       msg.textContent = '❌ ' + ((res && res.error) || 'Échec de l\'enregistrement.');
@@ -666,24 +723,44 @@ function downloadQr(elId, filename){
 // ------------------------------------------------------------------
 function openPassModal(){
   document.getElementById('passOld').value = '';
+  document.getElementById('newUsernameInput').value = '';
   document.getElementById('passNew1').value = '';
   document.getElementById('passNew2').value = '';
   document.getElementById('passModalMsg').textContent = '';
   document.getElementById('passModalOverlay').classList.add('open');
 }
 function closePassModal(){ document.getElementById('passModalOverlay').classList.remove('open'); }
-function submitPasswordChange(){
+
+async function submitAccountChange(){
   const oldP = document.getElementById('passOld').value;
+  const newUsername = document.getElementById('newUsernameInput').value.trim();
   const n1 = document.getElementById('passNew1').value;
   const n2 = document.getElementById('passNew2').value;
   const msg = document.getElementById('passModalMsg');
-  if (n1 !== n2){ msg.textContent = 'Les deux nouveaux mots de passe ne correspondent pas.'; msg.className = 'modalMsg err'; return; }
+
   if (!session){ msg.textContent = 'Session expirée, reconnectez-vous.'; msg.className = 'modalMsg err'; return; }
-  callApi('changePassword', {token: session.token, newPassword: n1}, oldP).then(res=>{
-    if (!res || !res.ok){ msg.textContent = res && res.error || 'Échec du changement.'; msg.className = 'modalMsg err'; return; }
-    msg.textContent = 'Mot de passe mis à jour avec succès.'; msg.className = 'modalMsg ok';
-    setTimeout(closePassModal, 1200);
-  }).catch(()=>{ msg.textContent = 'Erreur de connexion.'; msg.className = 'modalMsg err'; });
+  if (!oldP){ msg.textContent = 'Le mot de passe actuel est requis.'; msg.className = 'modalMsg err'; return; }
+  if (!newUsername && !n1){ msg.textContent = 'Renseignez un nouvel identifiant et/ou un nouveau mot de passe.'; msg.className = 'modalMsg err'; return; }
+  if (n1 && n1 !== n2){ msg.textContent = 'Les deux nouveaux mots de passe ne correspondent pas.'; msg.className = 'modalMsg err'; return; }
+
+  msg.textContent = 'Enregistrement...'; msg.className = 'modalMsg';
+  let currentPassword = oldP; // reste valide pour l'appel suivant même après un changement d'identifiant
+
+  if (newUsername){
+    const res = await callApi('changeUsername', {token: session.token, newUsername: newUsername}, currentPassword);
+    if (!res || !res.ok){ msg.textContent = (res && res.error) || "Échec du changement d'identifiant."; msg.className = 'modalMsg err'; return; }
+    session = { token: res.token, account: res.account };
+    sessionStorage.setItem('sz_admin_session', JSON.stringify(session));
+    document.getElementById('sessionBadge').textContent = session.account.label + ' (' + session.account.username + ')';
+  }
+
+  if (n1){
+    const res2 = await callApi('changePassword', {token: session.token, newPassword: n1}, currentPassword);
+    if (!res2 || !res2.ok){ msg.textContent = (res2 && res2.error) || 'Échec du changement de mot de passe.'; msg.className = 'modalMsg err'; return; }
+  }
+
+  msg.textContent = 'Compte mis à jour avec succès.'; msg.className = 'modalMsg ok';
+  setTimeout(closePassModal, 1200);
 }
 
 function showPanel(id, el){
@@ -701,6 +778,21 @@ function loadData(first){
     .catch(()=>{ document.getElementById('lastUpdate').textContent = 'Erreur lors du chargement.'; });
 }
 
+/** Configuration de zoom/pan partagée : molette, pincement (mobile), et
+ *  double-clic pour réinitialiser — même si le graphique est affiché en
+ *  réduit, on peut toujours voir chaque détail en zoomant dessus. */
+function zoomOptions(mode){
+  return {
+    pan: { enabled: true, mode: mode || 'x' },
+    zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: mode || 'x' }
+  };
+}
+function enableChartZoom(canvasId, chart){
+  const el = document.getElementById(canvasId);
+  el.style.cursor = 'grab';
+  el.ondblclick = () => chart.resetZoom();
+}
+
 function barChart(canvasId, labels, counts, scores, label1, label2){
   const ctx = document.getElementById(canvasId).getContext('2d');
   if (charts[canvasId]) charts[canvasId].destroy();
@@ -716,12 +808,14 @@ function barChart(canvasId, labels, counts, scores, label1, label2){
     options: {
       responsive:true,
       interaction:{mode:'index', intersect:false},
+      plugins:{ zoom: zoomOptions('x') },
       scales:{
         y:{ position:'left', beginAtZero:true, title:{display:true,text:'Nb réponses'} },
         y1:{ position:'right', beginAtZero:true, max:100, grid:{drawOnChartArea:false}, title:{display:true,text:'Satisfaction (%)'} }
       }
     }
   });
+  enableChartZoom(canvasId, charts[canvasId]);
 }
 
 function fillTable(tblId, rows){
@@ -762,13 +856,14 @@ function horizontalScoreChart(canvasId, labels, scores){
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: { legend: { display: false }, zoom: zoomOptions('y') },
       scales: {
         x: { beginAtZero: true, max: 100, title: { display: true, text: 'Satisfaction (%)' } },
         y: { ticks: { autoSkip: false, font: { size: 11 } } }
       }
     }
   });
+  enableChartZoom(canvasId, charts[canvasId]);
 }
 
 function genderLine(genderPct){
@@ -832,37 +927,114 @@ function ensureMap(){
   return leafletMap;
 }
 
-function populateDaySelect(gpsByDay){
-  const sel = document.getElementById('daySelect');
-  const prev = sel.value;
-  const days = Object.keys(gpsByDay || {}).sort().reverse(); // plus récent d'abord
-  if (!days.length){
-    sel.innerHTML = '<option value="">Aucune donnée</option>';
-    return;
-  }
-  sel.innerHTML = days.map(d => `<option value="${d}">${d}</option>`).join('');
-  if (days.includes(prev)) sel.value = prev;
+// Palette qualitative : jamais deux enquêteurs avec la même couleur tant qu'il y en a ≤ 24 affichés ensemble.
+const ENQUETEUR_PALETTE = ['#e6194b','#3cb44b','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45',
+  '#469990','#9A6324','#800000','#808000','#000075','#f4a300','#008080','#4b0082','#c71585','#556b2f',
+  '#8b4513','#2f4f4f','#ff1493','#00ced1','#b8860b','#483d8b'];
+function colorForIndex(i){ return ENQUETEUR_PALETTE[i % ENQUETEUR_PALETTE.length]; }
+
+function allCartePoints(){
+  const gpsByDay = (lastData && lastData.gpsByDay) || {};
+  const out = [];
+  Object.keys(gpsByDay).forEach(day => {
+    (gpsByDay[day] || []).forEach(p => out.push(Object.assign({day: day, month: day.length >= 7 ? day.slice(0,7) : ''}, p)));
+  });
+  return out;
+}
+
+function monthLabel(ym){
+  const [y, m] = ym.split('-');
+  const noms = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  const idx = parseInt(m, 10) - 1;
+  return (noms[idx] || m) + ' ' + y;
+}
+
+function carteFilters(){
+  return {
+    month: document.getElementById('carteMonth').value,
+    departement: document.getElementById('carteDept').value,
+    zone: document.getElementById('carteZone').value,
+    commune: document.getElementById('carteCommune').value,
+    structure: document.getElementById('carteStructure').value,
+  };
+}
+
+function populateCarteFilters(){
+  const all = allCartePoints();
+
+  const months = Array.from(new Set(all.map(p => p.month).filter(Boolean))).sort().reverse();
+  const monthSel = document.getElementById('carteMonth');
+  const prevMonth = monthSel.value;
+  monthSel.innerHTML = '<option value="">Tous les mois</option>' + months.map(m => `<option value="${m}">${monthLabel(m)}</option>`).join('');
+  if (months.includes(prevMonth)) monthSel.value = prevMonth;
+
+  const f = carteFilters();
+  let scoped = all;
+  if (f.month) scoped = scoped.filter(p => p.month === f.month);
+
+  const depts = new Set(), zones = new Set(), communes = new Set();
+  scoped.forEach(p => {
+    if (!p.commune) return;
+    communes.add(p.commune);
+    const d = communeDept(p.commune), z = communeZone(p.commune);
+    if (d) depts.add(d);
+    if (z) zones.add(z);
+  });
+  fillSelectPlain('carteDept', Array.from(depts).sort((a,b)=>a.localeCompare(b,'fr')));
+
+  let zoneList = Array.from(zones).filter(z => !f.departement || Array.from(communes).some(c => communeZone(c)===z && communeDept(c)===f.departement));
+  fillSelectPlain('carteZone', zoneList.sort((a,b)=>a.localeCompare(b,'fr')));
+
+  let communeList = Array.from(communes);
+  if (f.departement) communeList = communeList.filter(c => communeDept(c) === f.departement);
+  if (f.zone) communeList = communeList.filter(c => communeZone(c) === f.zone);
+  fillSelectPlain('carteCommune', communeList.sort((a,b)=>a.localeCompare(b,'fr')));
+
+  let structScoped = scoped;
+  if (f.departement) structScoped = structScoped.filter(p => communeDept(p.commune) === f.departement);
+  if (f.zone) structScoped = structScoped.filter(p => communeZone(p.commune) === f.zone);
+  if (f.commune) structScoped = structScoped.filter(p => p.commune === f.commune);
+  const structNames = Array.from(new Set(structScoped.map(p => p.structure).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'fr'));
+  fillSelectPlain('carteStructure', structNames);
+}
+
+function filteredCartePoints(){
+  const f = carteFilters();
+  return allCartePoints().filter(p => {
+    if (f.month && p.month !== f.month) return false;
+    if (f.departement && communeDept(p.commune) !== f.departement) return false;
+    if (f.zone && communeZone(p.commune) !== f.zone) return false;
+    if (f.commune && p.commune !== f.commune) return false;
+    if (f.structure && p.structure !== f.structure) return false;
+    return true;
+  });
 }
 
 function renderCarteEnqueteurs(){
   if (!lastData) return;
-  const gpsByDay = lastData.gpsByDay || {};
-  const day = document.getElementById('daySelect').value;
-  const points = gpsByDay[day] || [];
+  const points = filteredCartePoints();
   const mapWrap = document.getElementById('mapEnqueteurs');
   const emptyEl = document.getElementById('carteEmpty');
   const infoEl = document.getElementById('carteInfo');
+  const legendEl = document.getElementById('carteLegend');
 
   if (!points.length){
     mapWrap.style.display = 'none';
     emptyEl.style.display = 'block';
     infoEl.textContent = '';
+    legendEl.innerHTML = '';
     document.getElementById('tblCarteEnqueteurs').innerHTML = '';
     return;
   }
   mapWrap.style.display = 'block';
   emptyEl.style.display = 'none';
-  infoEl.textContent = `${points.length} position${points.length>1?'s':''} enregistrée${points.length>1?'s':''} le ${day}`;
+
+  const f = carteFilters();
+  infoEl.textContent = `${points.length} position${points.length>1?'s':''} — ${f.month ? monthLabel(f.month) : 'toutes périodes confondues'}`;
+
+  const enqueteurNames = Array.from(new Set(points.map(p => p.enqueteur))).sort((a,b)=>a.localeCompare(b,'fr'));
+  const colorOf = {};
+  enqueteurNames.forEach((name, i) => colorOf[name] = colorForIndex(i));
 
   const map = ensureMap();
   leafletMarkers.forEach(m => map.removeLayer(m));
@@ -870,24 +1042,62 @@ function renderCarteEnqueteurs(){
 
   const bounds = [];
   points.forEach(p => {
-    const marker = L.marker([p.lat, p.lon]).addTo(map);
+    const color = colorOf[p.enqueteur] || '#0f4c81';
+    const marker = L.circleMarker([p.lat, p.lon], { radius: 8, color: '#fff', weight: 1.5, fillColor: color, fillOpacity: 0.9 }).addTo(map);
     marker.bindPopup(
       `<b>${p.enqueteur || 'Enquêteur non renseigné'}</b><br>` +
       `${p.commune || ''}${p.structure ? ' · ' + p.structure : ''}<br>` +
-      (p.accuracy !== null ? `Précision ~${p.accuracy} m` : 'Précision inconnue')
+      `${p.day || ''}` +
+      (p.durationMin !== null && p.durationMin !== undefined ? `<br>Durée : ${p.durationMin} min` : '') +
+      (p.accuracy !== null ? `<br>Précision ~${p.accuracy} m` : '')
     );
     leafletMarkers.push(marker);
     bounds.push([p.lat, p.lon]);
   });
   if (bounds.length) map.fitBounds(bounds, { padding: [30,30], maxZoom: 16 });
-  setTimeout(() => map.invalidateSize(), 150); // au cas où l'onglet vient d'être affiché
+  setTimeout(() => map.invalidateSize(), 150);
 
-  let html = '<tr><th>Enquêteur</th><th>Commune</th><th>Structure</th><th>Précision</th></tr>';
+  legendEl.innerHTML = enqueteurNames.map(name =>
+    `<span style="display:flex;align-items:center;gap:6px;font-size:.82rem">
+      <span style="width:14px;height:14px;border-radius:50%;background:${colorOf[name]};display:inline-block;border:1px solid #fff;box-shadow:0 0 0 1px #ccc"></span>
+      ${name}
+    </span>`
+  ).join('');
+
+  const byEnq = {};
   points.forEach(p => {
-    html += `<tr><td>${p.enqueteur || '–'}</td><td>${p.commune || '–'}</td><td>${p.structure || '–'}</td><td>${p.accuracy !== null ? p.accuracy + ' m' : '–'}</td></tr>`;
+    const name = p.enqueteur || 'Non renseigné';
+    if (!byEnq[name]) byEnq[name] = { count: 0, durations: [] };
+    byEnq[name].count++;
+    if (typeof p.durationMin === 'number') byEnq[name].durations.push(p.durationMin);
+  });
+
+  let html = '<tr><th></th><th>Enquêteur</th><th>Nb collectes</th><th>Durée moyenne (min–max)</th></tr>';
+  enqueteurNames.forEach(name => {
+    const stat = byEnq[name];
+    let dureeTxt = 'N/A';
+    if (stat.durations.length){
+      const avg = stat.durations.reduce((a,b)=>a+b,0) / stat.durations.length;
+      const min = Math.min(...stat.durations), max = Math.max(...stat.durations);
+      dureeTxt = `${avg.toFixed(1)} min (${min.toFixed(1)}–${max.toFixed(1)})`;
+    }
+    html += `<tr>
+      <td><span style="width:14px;height:14px;border-radius:50%;background:${colorOf[name]};display:inline-block"></span></td>
+      <td>${name}</td><td>${stat.count}</td><td>${dureeTxt}</td>
+    </tr>`;
   });
   document.getElementById('tblCarteEnqueteurs').innerHTML = html;
 }
+
+['carteMonth','carteDept','carteZone','carteCommune','carteStructure'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    if (id === 'carteMonth' || id === 'carteDept'){ document.getElementById('carteZone').value=''; document.getElementById('carteCommune').value=''; document.getElementById('carteStructure').value=''; }
+    else if (id === 'carteZone'){ document.getElementById('carteCommune').value=''; document.getElementById('carteStructure').value=''; }
+    else if (id === 'carteCommune'){ document.getElementById('carteStructure').value=''; }
+    populateCarteFilters();
+    renderCarteEnqueteurs();
+  });
+});
 
 
 // ------------------------------------------------------------------
@@ -1010,7 +1220,8 @@ function verticalScoreChartWithThreshold(canvasId, labels, scores){
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, labels: { filter: item => item.text.indexOf('Moyenne') !== -1 } }
+        legend: { display: true, labels: { filter: item => item.text.indexOf('Moyenne') !== -1 } },
+        zoom: zoomOptions('x')
       },
       scales: {
         y: { beginAtZero: true, max: 100, title: { display:true, text:'Satisfaction (%)' } },
@@ -1018,6 +1229,7 @@ function verticalScoreChartWithThreshold(canvasId, labels, scores){
       }
     }
   });
+  enableChartZoom(canvasId, charts[canvasId]);
 }
 
 function renderSatCard(cible, canvasId, infoId, emptyId){
@@ -1053,6 +1265,69 @@ function renderSatisfactionView(){
     renderSatisfactionView();
   });
 });
+
+// ------------------------------------------------------------------
+// ICÔNES ŒIL (admin uniquement) : détail par domaine, pour Commune / Structure / Enquêteur
+// ------------------------------------------------------------------
+function toggleEyeDetail(containerId, builderFn){
+  const el = document.getElementById(containerId);
+  if (el.style.display === 'block'){ el.style.display = 'none'; return; }
+  el.innerHTML = builderFn();
+  el.style.display = 'block';
+}
+
+function scoreCellText(v){
+  return (v !== null && v !== undefined) ? Math.min(100, v) + '%' : '–';
+}
+
+/** Domaine | Niveau de satisfaction, regroupé par commune */
+function buildCommuneDetailTable(cible){
+  const cr = lastData && lastData.communeReport && lastData.communeReport[cible];
+  if (!cr || !cr.byCommune || !Object.keys(cr.byCommune).length) return '<p class="emptyNote">Aucune donnée disponible.</p>';
+  const communes = Object.keys(cr.byCommune).sort((a,b)=>a.localeCompare(b,'fr'));
+  let html = '<table class="detailTable"><tr><th>Domaine</th><th class="num">Niveau de satisfaction</th></tr>';
+  communes.forEach(commune => {
+    const rec = cr.byCommune[commune];
+    html += `<tr><td class="detailGroupHeader" colspan="2">${commune} (n=${rec.count})</td></tr>`;
+    cr.categories.forEach(cat => {
+      html += `<tr><td>${cat}</td><td class="num">${scoreCellText(rec.categoryScores[cat])}</td></tr>`;
+    });
+  });
+  html += '</table>';
+  return html;
+}
+
+/** Structure | Domaine | Niveau de satisfaction, table à plat */
+function buildStructureDetailTable(cible){
+  const sr = lastData && lastData.structureReport && lastData.structureReport[cible];
+  if (!sr || !sr.byStructure || !Object.keys(sr.byStructure).length) return '<p class="emptyNote">Aucune donnée disponible.</p>';
+  const structures = Object.keys(sr.byStructure).sort((a,b)=>a.localeCompare(b,'fr'));
+  let html = '<table class="detailTable"><tr><th>Structure</th><th>Domaine</th><th class="num">Niveau de satisfaction</th></tr>';
+  structures.forEach(structure => {
+    const rec = sr.byStructure[structure];
+    sr.categories.forEach((cat, i) => {
+      html += `<tr>${i===0 ? `<td rowspan="${sr.categories.length}">${structure} (n=${rec.count})</td>` : ''}<td>${cat}</td><td class="num">${scoreCellText(rec.categoryScores[cat])}</td></tr>`;
+    });
+  });
+  html += '</table>';
+  return html;
+}
+
+/** Enquêteur | Domaine | Niveau de satisfaction, table à plat */
+function buildEnqueteurDetailTable(cible){
+  const er = lastData && lastData.enqueteurReport && lastData.enqueteurReport[cible];
+  if (!er || !er.byEnqueteur || !Object.keys(er.byEnqueteur).length) return '<p class="emptyNote">Aucune donnée détaillée par enquêteur disponible.</p>';
+  const names = Object.keys(er.byEnqueteur).sort((a,b)=>a.localeCompare(b,'fr'));
+  let html = '<table class="detailTable"><tr><th>Enquêteur</th><th>Domaine</th><th class="num">Niveau de satisfaction</th></tr>';
+  names.forEach(name => {
+    const rec = er.byEnqueteur[name];
+    er.categories.forEach((cat, i) => {
+      html += `<tr>${i===0 ? `<td rowspan="${er.categories.length}">${name} (n=${rec.count})</td>` : ''}<td>${cat}</td><td class="num">${scoreCellText(rec.categoryScores[cat])}</td></tr>`;
+    });
+  });
+  html += '</table>';
+  return html;
+}
 
 function renderData(d){
   if (!d || !d.ok){ document.getElementById('lastUpdate').textContent = 'Erreur : ' + (d && d.error || 'inconnue'); return; }
@@ -1105,7 +1380,7 @@ function renderData(d){
   populateSatFilters();
   renderSatisfactionView();
 
-  populateDaySelect(d.gpsByDay);
+  populateCarteFilters();
   renderCarteEnqueteurs();
 }
 </script>
