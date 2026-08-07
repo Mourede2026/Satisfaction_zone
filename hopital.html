@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Satisfaction des usagers des hôpitaux</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f4c81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Satisfaction Hôpitaux">
+<style>
+  :root{--brand:#0f4c81}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;margin:0;padding:24px;color:#1f2937}
+  .logoRow{display:flex;justify-content:center;margin-bottom:8px}
+  .logoRow img{width:56px;height:56px;border-radius:14px}
+  h1{font-size:1.3rem;color:var(--brand);margin-bottom:4px;text-align:center}
+  p.sub{color:#6b7280;margin-top:0;text-align:center}
+  .targets{display:grid;gap:16px;margin-top:24px;max-width:520px;margin-left:auto;margin-right:auto}
+  .card{display:block;background:#fff;border-radius:16px;padding:24px 20px;text-decoration:none;color:#1f2937;box-shadow:0 1px 5px rgba(0,0,0,.08);border-left:8px solid var(--brand);text-align:center}
+  .card .emoji{font-size:2rem;display:block;margin-bottom:8px}
+  .card h2{margin:0 0 4px;font-size:1.08rem}
+  .card p{margin:0;color:#6b7280;font-size:.88rem}
+  .other{margin-top:36px;text-align:center}
+  .other a{color:#9aa5b1;text-decoration:underline;font-size:.8rem;margin:0 8px}
+</style>
+</head>
+<body>
+  <div class="logoRow"><img src="icon-192.png" alt="Logo"></div>
+  <h1>🏥 Satisfaction des usagers des hôpitaux</h1>
+  <p class="sub">Choisissez le questionnaire à administrer</p>
+
+  <div class="targets">
+    <a class="card" href="usagers-hopital.html">
+      <span class="emoji">🧑‍🦽</span>
+      <h2>Usagers de l'hôpital</h2>
+      <p>Questionnaire de satisfaction des patients / usagers</p>
+    </a>
+
+    <a class="card" href="personnel-hopital.html">
+      <span class="emoji">👩‍⚕️</span>
+      <h2>Personnel de l'hôpital</h2>
+      <p>Questionnaire de satisfaction du personnel soignant</p>
+    </a>
+
+    <a class="card" href="communaute-hopital.html">
+      <span class="emoji">👥</span>
+      <h2>Membres de la communauté</h2>
+      <p>Questionnaire à destination de la communauté</p>
+    </a>
+
+    <a class="card" href="acteurs-hopital.html">
+      <span class="emoji">🤝</span>
+      <h2>Acteurs communautaires</h2>
+      <p>Questionnaire à destination des acteurs communautaires</p>
+    </a>
+  </div>
+
+  <div class="other">
+    <a href="index.html">← Retour à l'accueil</a>
+  </div>
+</body>
+</html>

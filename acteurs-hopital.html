@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Satisfaction — acteurs communautaires - Ets MOUREDE &amp; ASSOCIES</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f4c81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Satisfaction — acteurs communautaires">
+<style>
+  :root{--brand:#0f4c81}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;margin:0;padding:0 0 100px;color:#1f2937}
+  header{background:var(--brand);color:#fff;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  header h1{font-size:1.05rem;margin:0;font-weight:700}
+  .badge{background:#e08e0b;color:#fff;border-radius:999px;padding:2px 9px;font-size:.75rem;font-weight:700}
+  .status-banner{font-size:.8rem;text-align:center;padding:0;max-height:0;overflow:hidden;transition:.2s}
+  .status-banner.offline{background:#c0392b;color:#fff;padding:8px;max-height:40px}
+  .status-banner.queued{background:#e08e0b;color:#fff;padding:8px;max-height:40px}
+  .progressWrap{background:#e2e8f0;height:5px}
+  .progressBar{background:var(--brand);height:100%;width:0;transition:.25s}
+  .progressText{text-align:center;font-size:.75rem;color:#6b7280;padding:8px 0 0}
+  main{max-width:640px;margin:0 auto;padding:18px}
+  .secTitle{font-size:1.05rem;color:var(--brand);margin:6px 0 18px;line-height:1.4}
+  .field{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .field label{display:block;font-weight:600;margin-bottom:8px;line-height:1.4}
+  .req{color:#c0392b}
+  .hint{font-size:.78rem;color:#9aa5b1;margin:-4px 0 10px}
+  .opts{display:flex;flex-direction:column;gap:8px}
+  .opt{display:flex;align-items:flex-start;gap:8px;font-weight:400;background:#f8fafc;border-radius:10px;padding:10px 12px;cursor:pointer}
+  .opt input{margin-top:3px}
+  textarea, input[type=number]{width:100%;padding:10px;border:1px solid #dfe4ea;border-radius:10px;font-size:.95rem;font-family:inherit}
+  .note{background:#eef4fa;border-left:4px solid var(--brand);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:.92rem;line-height:1.5}
+  .gpsBox{background:#f8fafc;border-radius:10px;padding:12px;font-size:.85rem}
+  .gpsBox.gpsOk{background:#e8f7ef;color:#1a9e5c}
+  .gpsBox.gpsErr{background:#fdecea;color:#c0392b}
+  .gpsBox button{margin-top:8px;margin-right:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer;font-size:.8rem}
+  .navBar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;padding:12px 18px;display:flex;gap:10px;justify-content:space-between;z-index:5}
+  .navBar button{flex:1;padding:13px;border-radius:12px;border:none;font-weight:700;font-size:.95rem;cursor:pointer}
+  #btnPrev{background:#eef1f4;color:#1f2937}
+  #btnNext{background:var(--brand);color:#fff}
+  #btnSubmit{background:#1a9e5c;color:#fff}
+  .toast{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 18px;border-radius:10px;font-size:.85rem;max-width:90vw;text-align:center;z-index:10}
+</style>
+</head>
+<body>
+
+<div id="status-banner" class="status-banner"></div>
+<header>
+  <h1 id="formTitle">Chargement…</h1>
+  <span id="qCount" class="badge" style="display:none">0</span>
+</header>
+<div class="progressWrap"><div id="progressBar" class="progressBar"></div></div>
+<div id="progressText" class="progressText"></div>
+
+<main id="fieldsRoot"></main>
+
+<div class="navBar">
+  <button id="btnPrev" onclick="HopitalEngine.prevSection()">← Précédent</button>
+  <button id="btnNext" onclick="HopitalEngine.nextSection()">Suivant →</button>
+  <button id="btnSubmit" onclick="HopitalEngine.submitForm()" style="display:none">✅ Envoyer</button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="config.js"></script>
+<script src="hopital-engine.js"></script>
+<script>
+const SCHEMA = {"sections": [{"title": "Questionnaire", "fields": [{"name": "dept", "label": "Département", "hint": null, "required": true, "relevant": null, "type": "select_one", "options": [{"name": "alibori", "label": "Alibori"}, {"name": "atacora", "label": "Atacora"}, {"name": "atlantique", "label": "Atlantique"}, {"name": "borgou", "label": "Borgou"}, {"name": "collines", "label": "Collines"}, {"name": "couffo", "label": "Couffo"}, {"name": "donga", "label": "Donga"}, {"name": "littoral", "label": "Littoral"}, {"name": "mono", "label": "Mono"}, {"name": "oueme", "label": "Oueme"}, {"name": "plateau", "label": "Plateau"}, {"name": "zou", "label": "Zou"}]}, {"name": "zone", "label": "Zone sanitaire", "hint": null, "required": true, "relevant": null, "type": "select_one", "options": [{"name": "ban", "label": "Banikoara (ZS)"}, {"name": "kgs", "label": "Kandi-Gogounou-Ségbana"}, {"name": "mk", "label": "Malanville-Karimama"}, {"name": "kpk", "label": "Kouandé-Péhunco-Kérou"}, {"name": "ntb", "label": "Natitingou-Boukoumbé-Toucountouna"}, {"name": "tmc", "label": "Tanguiéta-Cobly-Matéri"}, {"name": "acs", "label": "Abomey-Calavi-So-ava"}, {"name": "atz", "label": "Allada-Toffo-Zè"}, {"name": "okt", "label": "Ouidah-Kpomassè-Tori-Bossito"}, {"name": "bs", "label": "Bembèrèkè-Sinendé"}, {"name": "pn", "label": "N'Dali-Parakou"}, {"name": "nkp", "label": "Nikki-Kalalé-Pèrèrè"}, {"name": "tch", "label": "Tchaourou (ZS)"}, {"name": "dagla", "label": "Dassa-Glazoué"}, {"name": "saba", "label": "Savalou-Bantè"}, {"name": "sao", "label": "Savè-Ouèssè"}, {"name": "add", "label": "Aplahoué-Djakotomey-Dogbo"}, {"name": "ktl", "label": "Klouékamè-Toviklin- Lalo"}, {"name": "basil", "label": "Bassila (ZS)"}, {"name": "dco", "label": "Djougou-Ouaké-Copargo"}, {"name": "cot1", "label": "Cotonou 1-Cotonou 4"}, {"name": "cot2", "label": "Cotonou 2-Cotonou 3"}, {"name": "cot5", "label": "Cotonou 5"}, {"name": "cot6", "label": "Cotonou 6"}, {"name": "cghb", "label": "Comè-Grand popo-Houèyogbé-Bopa"}, {"name": "la", "label": "Lokossa-Athiémè"}, {"name": "abd", "label": "Adjohoun-Bonou-Dangbo"}, {"name": "3a", "label": "Akpro-missérété-Avrankou-Adjarra"}, {"name": "psa", "label": "Porto-Novo-Sèmè-kpodji-Aguégués"}, {"name": "pka", "label": "Pobè-Kétou-Adja-ouèrè"}, {"name": "sakif", "label": "Sakété-Ifangni"}, {"name": "zoboza", "label": "Bohicon-Za-kpota-Zogbodomey"}, {"name": "cozo", "label": "Covè-Zagnanado-Ouinhi"}, {"name": "daa", "label": "Djidja-Abomey-Agbangnizoun"}], "filterField": "dept", "filterCol": "dept", "optionFilterVals": {"ban": "alibori", "kgs": "alibori", "mk": "alibori", "kpk": "atacora", "ntb": "atacora", "tmc": "atacora", "acs": "atlantique", "atz": "atlantique", "okt": "atlantique", "bs": "borgou", "pn": "borgou", "nkp": "borgou", "tch": "borgou", "dagla": "collines", "saba": "collines", "sao": "collines", "add": "couffo", "ktl": "couffo", "basil": "donga", "dco": "donga", "cot1": "littoral", "cot2": "littoral", "cot5": "littoral", "cot6": "littoral", "cghb": "mono", "la": "mono", "abd": "oueme", "3a": "oueme", "psa": "oueme", "pka": "plateau", "sakif": "plateau", "zoboza": "zou", "cozo": "zou", "daa": "zou"}}, {"name": "fs", "label": "Formation Sanitaire", "hint": null, "required": true, "relevant": null, "type": "select_one", "options": [{"name": "HZ_Banikoara", "label": "HZ Banikoara"}, {"name": "HZ_Kandi", "label": "HZ Kandi"}, {"name": "HZ_Malanville-Karimama", "label": "HZ Malanville-Karimama"}, {"name": "HZ_Kouande", "label": "HZ Kouande"}, {"name": "CHD_Atacora", "label": "CHD Atacora"}, {"name": "HZ_Natitingou", "label": "HZ Natitingou"}, {"name": "HZ_Saint_Jean_de_Dieu_(Tanguiéta)", "label": "HZ Saint Jean de Dieu (Tanguiéta)"}, {"name": "CHUZ_Abomey-Calavi", "label": "CHUZ Abomey-Calavi"}, {"name": "HZ_Allada", "label": "HZ Allada"}, {"name": "HZ_Ouidah", "label": "HZ Ouidah"}, {"name": "CHD_Borgou", "label": "CHD Borgou"}, {"name": "Hôpital_Evangélique_de_Bembèrèkè", "label": "Hôpital Evangélique de Bembèrèkè"}, {"name": "HZ_Boko", "label": "HZ Boko"}, {"name": "HZ_Sounon_Sero", "label": "HZ Sounon Sero"}, {"name": "Hôpital_St_jean_de_Dieu", "label": "Hôpital St jean de Dieu"}, {"name": "HZ_Dassa", "label": "HZ Dassa"}, {"name": "HZ_Savalou", "label": "HZ Savalou"}, {"name": "HZ_Save", "label": "HZ Save"}, {"name": "HZ_Aplahoue", "label": "HZ Aplahoue"}, {"name": "HZ_Klouekanme", "label": "HZ Klouekanme"}, {"name": "HZ_Bassila", "label": "HZ Bassila"}, {"name": "CHD_Donga", "label": "CHD Donga"}, {"name": "CHU-MEL_Cotonou", "label": "CHU-MEL Cotonou"}, {"name": "CHUZ_SURU-LERE", "label": "CHUZ SURU-LERE"}, {"name": "HZ_Menontin", "label": "HZ Menontin"}, {"name": "HZ_Come", "label": "HZ Come"}, {"name": "CHD_Mono", "label": "CHD Mono"}, {"name": "HZ_Lokossa", "label": "HZ Lokossa"}, {"name": "HZ_Adjohoun", "label": "HZ Adjohoun"}, {"name": "CHD_Oueme", "label": "CHD Oueme"}, {"name": "HZ_Pobe", "label": "HZ Pobe"}, {"name": "HZ_Sakete", "label": "HZ Sakete"}, {"name": "HZ_Cove", "label": "HZ Cove"}, {"name": "CHD_Zou", "label": "CHD Zou"}, {"name": "HZ_Djidja", "label": "HZ Djidja"}], "filterField": "zone", "filterCol": "zone", "optionFilterVals": {"HZ_Banikoara": "ban", "HZ_Kandi": "kgs", "HZ_Malanville-Karimama": "mk", "HZ_Kouande": "kpk", "CHD_Atacora": "ntb", "HZ_Natitingou": "ntb", "HZ_Saint_Jean_de_Dieu_(Tanguiéta)": "tmc", "CHUZ_Abomey-Calavi": "acs", "HZ_Allada": "atz", "HZ_Ouidah": "okt", "CHD_Borgou": "pn", "Hôpital_Evangélique_de_Bembèrèkè": "bs", "HZ_Boko": "pn", "HZ_Sounon_Sero": "nkp", "Hôpital_St_jean_de_Dieu": "tch", "HZ_Dassa": "dagla", "HZ_Savalou": "saba", "HZ_Save": "sao", "HZ_Aplahoue": "add", "HZ_Klouekanme": "ktl", "HZ_Bassila": "basil", "CHD_Donga": "dco", "CHU-MEL_Cotonou": "cot1", "CHUZ_SURU-LERE": "cot2", "HZ_Menontin": "cot5", "HZ_Come": "cghb", "CHD_Mono": "la", "HZ_Lokossa": "la", "HZ_Adjohoun": "abd", "CHD_Oueme": "psa", "HZ_Pobe": "pka", "HZ_Sakete": "sakif", "HZ_Cove": "cozo", "CHD_Zou": "daa", "HZ_Djidja": "daa"}}, {"name": "Enqueteur", "label": "Enquêteur", "hint": null, "required": true, "relevant": null, "type": "select_one", "options": [{"name": "1", "label": "Enquêteur 1"}, {"name": "2", "label": "Enquêteur 2"}, {"name": "3", "label": "Enquêteur 3"}, {"name": "4", "label": "Enquêteur 4"}, {"name": "5", "label": "Enquêteur 5"}, {"name": "enqu_teur_6", "label": "Enquêteur 6"}, {"name": "enqu_teur_7", "label": "Enquêteur 7"}, {"name": "enqu_teur_8", "label": "Enquêteur 8"}, {"name": "enqu_teur_9", "label": "Enquêteur 9"}, {"name": "enqu_teur_10", "label": "Enquêteur 10"}, {"name": "6", "label": "Superviseur 1"}, {"name": "7", "label": "Superviseur 2"}, {"name": "superviseur_3", "label": "Superviseur 3"}, {"name": "superviseur_4", "label": "Superviseur 4"}]}, {"name": "Que_pensez_vous_de_l_ette_structure_fs_", "label": "Que pensez-vous de la Gouvernance dans cette structure (${fs}) ?", "hint": "Faire un résumé des dires", "required": true, "relevant": null, "type": "text"}, {"name": "Comment_appr_ciez_vo_ette_structure_fs_", "label": "Comment appréciez-vous l'accueil dans cette structure (${fs}) ?", "hint": "Faire un résumé des dires", "required": true, "relevant": null, "type": "text"}, {"name": "Selon_vous_les_soignant_respe", "label": "Selon vous, les soignant respectent-ils l'intégrité des patients ?", "hint": null, "required": true, "relevant": null, "type": "select_one", "options": [{"name": "oui", "label": "Oui"}, {"name": "non", "label": "Non"}]}, {"name": "Si_Oui_en_quoi", "label": "Si Oui, en quoi?", "hint": null, "required": true, "relevant": "${Selon_vous_les_soignant_respe} = 'oui'", "type": "text"}, {"name": "Si_Non_en_quoi", "label": "Si Non, en quoi?", "hint": null, "required": true, "relevant": "${Selon_vous_les_soignant_respe} = 'non'", "type": "text"}, {"name": "Les_usagers_de_cette_des_services_offerts", "label": "Les usagers de cette structure (${fs}) se plaignent-ils des services offerts?", "hint": null, "required": true, "relevant": null, "type": "select_one", "options": [{"name": "oui", "label": "Oui"}, {"name": "non", "label": "Non"}]}, {"name": "Que_proposez_vous_ette_structure_fs_", "label": "Que proposez-vous à améliorer dans cette structure (${fs}) ?", "hint": null, "required": true, "relevant": null, "type": "text"}, {"type": "note", "name": "Merci_pour_la_participation_", "label": "Merci pour la participation !"}]}]};
+HopitalEngine.init({
+  formKey: 'acteurs_hopital',
+  submitAction: 'submitActeursComHopital',
+  title: "Satisfaction — acteurs communautaires",
+  hasGeo: false,
+  requiredRole: null,
+  schema: SCHEMA
+});
+</script>
+</body>
+</html>
