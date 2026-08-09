@@ -124,14 +124,19 @@
     <span class="sessionBadge" id="sessionBadge" style="display:none"></span>
     <button class="linkBtn" id="changePassBtn" style="display:none" onclick="openPassModal()">Modifier mon compte</button>
     <button class="linkBtn" onclick="logout()">Se déconnecter</button>
-    <a href="index.html">Accueil</a>
+    <a href="acces.html">Accueil</a>
   </div>
 </header>
 
 <div id="loginBox" style="max-width:340px;margin:60px auto;background:#fff;padding:24px;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.1);text-align:center">
   <h2>🔒 Connexion requise</h2>
   <p style="color:#6b7280;font-size:.9rem">Connectez-vous depuis la page d'accueil avec votre identifiant personnel.</p>
-  <a href="index.html" style="display:inline-block;margin-top:10px;padding:11px 18px;border-radius:10px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600">Aller à l'accueil</a>
+  <a href="acces.html" style="display:inline-block;margin-top:10px;padding:11px 18px;border-radius:10px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600">Aller à l'accueil</a>
+</div>
+
+<div id="hopitalHolding" style="display:none;max-width:460px;margin:60px auto;background:#fff;padding:28px;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.1);text-align:center">
+  <h2>🏥 Espace hôpital</h2>
+  <p id="hopitalHoldingText" style="color:#6b7280;font-size:.92rem;line-height:1.6"></p>
 </div>
 
 <main id="dashRoot" style="display:none">
@@ -328,6 +333,18 @@
           <button onclick="refreshQr('personnel')" id="btnRefreshPersonnel">🔄 Actualiser</button>
           <button onclick="downloadQr('qrAdminPersonnel','qr-personnel.png')">⬇️ Télécharger</button>
         </div>
+        <div class="qrCardAdmin">
+          <h3>🏥 Enquêteur Hôpital <small>(Usagers + Communauté + Acteurs)</small></h3>
+          <div class="qrBox" id="qrAdminEnqueteurHopital"></div>
+          <button onclick="refreshQr('enqueteur_hopital')" id="btnRefreshEnqueteurHopital">🔄 Actualiser</button>
+          <button onclick="downloadQr('qrAdminEnqueteurHopital','qr-enqueteur-hopital.png')">⬇️ Télécharger</button>
+        </div>
+        <div class="qrCardAdmin">
+          <h3>🏥 Personnel Hôpital</h3>
+          <div class="qrBox" id="qrAdminPersonnelHopital"></div>
+          <button onclick="refreshQr('personnel_hopital')" id="btnRefreshPersonnelHopital">🔄 Actualiser</button>
+          <button onclick="downloadQr('qrAdminPersonnelHopital','qr-personnel-hopital.png')">⬇️ Télécharger</button>
+        </div>
       </div>
     </div>
 
@@ -353,6 +370,8 @@
         <select id="assignRole" style="width:100%;padding:9px;border:1px solid #dfe4ea;border-radius:8px;margin-bottom:10px">
           <option value="enqueteur">Enquêteur (Usagers + COGECS)</option>
           <option value="personnel">Personnel de santé</option>
+          <option value="enqueteur_hopital">Enquêteur Hôpital (Usagers + Communauté + Acteurs)</option>
+          <option value="personnel_hopital">Personnel Hôpital</option>
         </select>
       </div>
       <div id="assignReader" style="max-width:280px;margin:0 auto;border-radius:12px;overflow:hidden"></div>
@@ -399,6 +418,7 @@
       <option value="departement">Département</option>
       <option value="national">National</option>
       <option value="superviseur">Superviseur (tout voir, sans Comptes &amp; QR)</option>
+      <option value="responsable_hopital">Responsable d'hôpital</option>
       <option value="admin">Administrateur</option>
     </select>
     <input type="text" id="editDept" placeholder="Département">
@@ -509,11 +529,21 @@ let session = null; // {token, account:{username, level, departement, zone, comm
 
 function enterDashboard(){
   document.getElementById('loginBox').style.display = 'none';
-  document.getElementById('dashRoot').style.display = 'block';
   const badge = document.getElementById('sessionBadge');
   badge.style.display = 'inline-block';
   badge.textContent = session.account.label + ' (' + session.account.username + ')';
   document.getElementById('changePassBtn').style.display = 'inline';
+
+  if (session.account.level === 'responsable_hopital'){
+    document.getElementById('dashRoot').style.display = 'none';
+    document.getElementById('hopitalHolding').style.display = 'block';
+    document.getElementById('hopitalHoldingText').textContent =
+      "Compte : " + session.account.label + " — Hôpital : " + (session.account.hopitalFs || '—') +
+      ". L'onglet d'analyse détaillée pour votre hôpital est en cours de construction et sera bientôt disponible ici.";
+    return;
+  }
+
+  document.getElementById('dashRoot').style.display = 'block';
   document.getElementById('monCompteInfo').textContent =
     'Connecté en tant que ' + session.account.label + ' — niveau : ' + session.account.level +
     (session.account.departement ? ' · Département : ' + session.account.departement : '') +
@@ -522,6 +552,8 @@ function enterDashboard(){
   const canManageQr = (session.account.level === 'admin');
   document.getElementById('btnRefreshEnqueteur').disabled = !canManageQr;
   document.getElementById('btnRefreshPersonnel').disabled = !canManageQr;
+  document.getElementById('btnRefreshEnqueteurHopital').disabled = !canManageQr;
+  document.getElementById('btnRefreshPersonnelHopital').disabled = !canManageQr;
   document.getElementById('tabComptes').style.display = canManageQr ? 'block' : 'none';
   document.querySelectorAll('.adminOnly').forEach(el => { el.style.display = (session.account.level === 'admin') ? 'inline-block' : 'none'; });
   loadData(true);
@@ -530,12 +562,12 @@ function enterDashboard(){
   autoTimer = setInterval(()=>loadData(false), 30000); // auto-refresh 30s
 }
 
-// La connexion se fait sur index.html ; ici on ne fait que lire la session.
+// La connexion se fait sur acces.html ; ici on ne fait que lire la session.
 (function(){
   const saved = sessionStorage.getItem('sz_admin_session');
-  if (!saved){ window.location.href = 'index.html'; return; }
+  if (!saved){ window.location.href = 'acces.html'; return; }
   try { session = JSON.parse(saved); enterDashboard(); }
-  catch(e){ window.location.href = 'index.html'; }
+  catch(e){ window.location.href = 'acces.html'; }
 })();
 
 function toggleTester(){
@@ -571,6 +603,14 @@ function stopTester(){
   testerActive = false;
   document.getElementById('testerToggle').textContent = 'Activer la caméra';
 }
+function roleLabel(role){
+  return {
+    enqueteur: 'Enquêteur (Usagers + COGECS)',
+    personnel: 'Personnel de santé',
+    enqueteur_hopital: 'Enquêteur Hôpital (Usagers + Communauté + Acteurs)',
+    personnel_hopital: 'Personnel Hôpital',
+  }[role] || role;
+}
 function onTesterDecoded(decodedText){
   const now = Date.now();
   if (decodedText === testerLastDecoded && (now - testerLastAt) < 3000) return;
@@ -580,8 +620,7 @@ function onTesterDecoded(decodedText){
   result.style.color = '#6b7280';
   callApi('matchQrCode', {text: extractCandidateCodeAdmin(decodedText)}).then(res=>{
     if (res && res.ok){
-      const roleLabel = res.role === 'enqueteur' ? 'Enquêteur (Usagers + COGECS)' : 'Personnel de santé';
-      result.textContent = '✅ Code valide — donnerait accès à : ' + roleLabel;
+      result.textContent = '✅ Code valide — donnerait accès à : ' + roleLabel(res.role);
       result.style.color = '#1a9e5c';
     } else {
       result.textContent = '❌ ' + ((res && res.error) || "Ce code ne correspond à aucune cible active.");
@@ -659,7 +698,7 @@ function saveAssignedCode(code){
   msg.style.color = '#6b7280';
   callApi('setQrCode', {token: session.token, role: role, code: code}, null).then(res=>{
     if (res && res.ok){
-      msg.textContent = '✅ Remplacé : ce code donne maintenant accès à ' + (role==='enqueteur' ? 'Enquêteur (Usagers + COGECS)' : 'Personnel de santé') + '. L\'ancien code/QR pour cette cible ne fonctionne plus.';
+      msg.textContent = '✅ Remplacé : ce code donne maintenant accès à ' + roleLabel(role) + '. L\'ancien code/QR pour cette cible ne fonctionne plus.';
       msg.style.color = '#1a9e5c';
       loadQrCodes(); // rafraîchit aussi l'aperçu QR standard (montre désormais ce code)
     } else {
@@ -671,7 +710,7 @@ function saveAssignedCode(code){
 
 function logout(){
   sessionStorage.removeItem('sz_admin_session');
-  window.location.href = 'index.html';
+  window.location.href = 'acces.html';
 }
 
 // ------------------------------------------------------------------
@@ -681,10 +720,16 @@ let qrObjs = {};
 function absoluteUrl(path){
   return window.location.href.replace(/admin\.html.*$/, '') + path;
 }
+const QR_ROLE_MAP = {
+  enqueteur:          { elId: 'qrAdminEnqueteur',         target: 'enqueteur.html' },
+  personnel:          { elId: 'qrAdminPersonnel',         target: 'personnels.html' },
+  enqueteur_hopital:  { elId: 'qrAdminEnqueteurHopital',   target: 'hopital.html' },
+  personnel_hopital:  { elId: 'qrAdminPersonnelHopital',   target: 'personnel-hopital.html' },
+};
 function drawQr(elId, role, token){
   const el = document.getElementById(elId);
   el.innerHTML = '';
-  const target = (role === 'enqueteur') ? 'enqueteur.html' : 'personnels.html';
+  const target = (QR_ROLE_MAP[role] || {}).target || 'index.html';
   const url = absoluteUrl(target) + '?role=' + encodeURIComponent(role) + '&code=' + encodeURIComponent(token);
   qrObjs[elId] = new QRCode(el, {
     text: url,
@@ -696,14 +741,15 @@ function drawQr(elId, role, token){
   });
 }
 function loadQrCodes(){
-  callApi('getQrToken', {role:'enqueteur'}).then(res=>{ if (res && res.ok) drawQr('qrAdminEnqueteur','enqueteur', res.token); });
-  callApi('getQrToken', {role:'personnel'}).then(res=>{ if (res && res.ok) drawQr('qrAdminPersonnel','personnel', res.token); });
+  Object.keys(QR_ROLE_MAP).forEach(role => {
+    callApi('getQrToken', {role}).then(res => { if (res && res.ok) drawQr(QR_ROLE_MAP[role].elId, role, res.token); });
+  });
 }
 function refreshQr(role){
   if (!session) return;
   callApi('refreshQrToken', {token: session.token, role: role}).then(res=>{
     if (res && res.ok){
-      drawQr(role==='enqueteur' ? 'qrAdminEnqueteur' : 'qrAdminPersonnel', role, res.token);
+      drawQr(QR_ROLE_MAP[role].elId, role, res.token);
     } else {
       alert(res && res.error || 'Impossible de régénérer ce QR code.');
     }

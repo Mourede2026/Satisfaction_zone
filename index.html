@@ -65,6 +65,16 @@
   }
 
   footer{ margin-top:48px; font-size:.72rem; color:#b3bcc4 }
+
+  .installBanner{
+    position:fixed; left:16px; right:16px; bottom:16px; max-width:480px; margin:0 auto;
+    background:#12313B; color:#fff; border-radius:14px; padding:14px 16px;
+    display:flex; align-items:center; gap:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:20;
+  }
+  .installBanner span{ flex:1; font-size:.85rem; line-height:1.4 }
+  .installBanner button{ border:none; border-radius:8px; padding:9px 14px; font-weight:700; font-size:.82rem; cursor:pointer }
+  #installBtn{ background:var(--brand); color:#fff }
+  #installClose{ background:transparent; color:#9aa5b1; padding:4px 6px; font-size:1rem }
 </style>
 </head>
 <body>
@@ -83,10 +93,59 @@
 
   <div class="buttons">
     <a class="btn btn-primary" href="acces.html">Satisfaction des usagers des zones sanitaires</a>
-    <a class="btn btn-primary" href="hopital.html">Satisfaction des usagers des hôpitaux</a>
+    <a class="btn btn-primary" href="acces-hopital.html">Satisfaction des usagers des hôpitaux</a>
   </div>
 
   <footer>© Ets MOUREDE &amp; ASSOCIES</footer>
+
+  <div id="installBanner" class="installBanner" style="display:none">
+    <span id="installText">📲 Installez l'application pour un accès plus rapide.</span>
+    <button id="installBtn">Installer</button>
+    <button id="installClose" aria-label="Fermer">✕</button>
+  </div>
+
+<script>
+// ---- Installation automatique de l'application (PWA) ----
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallBanner();
+  // tentative de déclenchement automatique de l'invite native (Chrome/Edge/Android)
+  setTimeout(() => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); }, 900);
+});
+
+function showInstallBanner(){
+  document.getElementById('installBanner').style.display = 'flex';
+}
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+});
+document.getElementById('installClose').addEventListener('click', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+// ---- iOS / Safari : pas d'invite automatique possible, on affiche les instructions ----
+(function(){
+  const ua = navigator.userAgent || '';
+  const isIos = /iphone|ipad|ipod/i.test(ua);
+  const isStandalone = window.navigator.standalone === true;
+  if (isIos && !isStandalone){
+    document.getElementById('installText').textContent =
+      "📲 Pour installer l'application : bouton Partager, puis « Sur l'écran d'accueil ».";
+    document.getElementById('installBtn').style.display = 'none';
+    showInstallBanner();
+  }
+})();
+</script>
 
 </body>
 </html>

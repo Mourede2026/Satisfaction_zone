@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquêtes de satisfaction - Hôpitaux</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0f4c81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Satisfaction Hôpitaux">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{--brand:#0f4c81}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f4f6f8;margin:0;padding:24px;color:#1f2937}
+  .logoRow{display:flex;justify-content:center;margin-bottom:8px}
+  .logoRow img{width:56px;height:56px;border-radius:14px}
+  h1{font-size:1.3rem;color:var(--brand);margin-bottom:4px;text-align:center}
+  p.sub{color:#6b7280;margin-top:0;text-align:center}
+  .wrapCards{display:grid;gap:16px;margin-top:24px;max-width:440px;margin-left:auto;margin-right:auto}
+  .card{background:#fff;border-radius:16px;padding:22px 20px;box-shadow:0 1px 5px rgba(0,0,0,.08);border-left:8px solid var(--brand)}
+  .card h2{margin:0 0 12px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  .card input{width:100%;padding:11px;border:1px solid #dfe4ea;border-radius:10px;margin-bottom:10px;font-size:.95rem}
+  .card button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--brand);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer}
+  .card button.secondary{background:#eef1f4;color:#1f2937;margin-top:8px}
+  #loginError{color:#c0392b;font-size:.8rem;margin-top:8px;min-height:16px}
+  #reader{width:100%;border-radius:12px;overflow:hidden}
+  .scanHint{font-size:.8rem;color:#6b7280;margin-top:8px;text-align:center}
+  #scanMsg{font-size:.85rem;margin-top:10px;text-align:center;min-height:18px}
+  #scanMsg.err{color:#c0392b}
+  #scanMsg.ok{color:#1a9e5c}
+  .or{text-align:center;color:#9aa5b1;font-size:.78rem;margin:22px 0 6px}
+  .redirecting{max-width:420px;margin:80px auto;text-align:center;background:#fff;border-radius:16px;padding:30px;box-shadow:0 1px 5px rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+
+<div id="redirecting" class="redirecting" style="display:none">
+  <div class="logoRow"><img src="icon-192.png" alt="Logo"></div>
+  <p>Session déjà active, ouverture du formulaire…</p>
+</div>
+
+<div id="root">
+  <div class="logoRow"><img src="icon-192.png" alt="Logo"></div>
+  <h1>🏥 Enquêtes de satisfaction</h1>
+  <p class="sub">Usagers des hôpitaux</p>
+
+  <div class="wrapCards">
+    <div class="card">
+      <h2>🔒 Tableau de bord</h2>
+      <input type="text" id="loginUser" placeholder="Identifiant personnel">
+      <input type="password" id="loginPass" placeholder="Mot de passe">
+      <button onclick="doLogin()">Se connecter</button>
+      <div id="loginError"></div>
+    </div>
+
+    <div class="or">— ou —</div>
+
+    <div class="card">
+      <h2>📷 Scanner un QR code</h2>
+      <div id="reader"></div>
+      <button class="secondary" id="scanToggle" onclick="toggleScanner()">Activer la caméra</button>
+      <div id="scanMsg"></div>
+      <div class="scanHint">Scannez le QR « Enquêteur Hôpital » ou « Personnel Hôpital » fourni par l'administrateur.</div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const GRANT_KEY = 'sz_grant';
+const INACTIVITY_LIMIT_MS = 6 * 60 * 60 * 1000; // 6 heures d'inactivité
+
+function saveGrant(role){
+  localStorage.setItem(GRANT_KEY, JSON.stringify({ role: role, lastActivity: Date.now() }));
+}
+function loadGrant(){
+  try { return JSON.parse(localStorage.getItem(GRANT_KEY)); } catch(e){ return null; }
+}
+function grantStillValid(g){
+  return g && (Date.now() - g.lastActivity) <= INACTIVITY_LIMIT_MS;
+}
+function destinationFor(role){
+  return role === 'enqueteur_hopital' ? 'hopital.html' : 'personnel-hopital.html';
+}
+
+// ---- Connexion tableau de bord ----
+function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  err.textContent = 'Connexion...';
+  callApi('accountLogin', {username: u}, p).then(res=>{
+    if (!res || !res.ok){ err.textContent = (res && res.error) || 'Connexion impossible.'; return; }
+    sessionStorage.setItem('sz_admin_session', JSON.stringify({ token: res.token, account: res.account }));
+    window.location.href = 'admin.html';
+  }).catch(()=>{ err.textContent = 'Erreur de connexion.'; });
+}
+
+// ---- Scanner QR (caméra) ----
+let html5QrCode = null;
+let scannerActive = false;
+
+function extractCandidateCode(text){
+  try {
+    const url = new URL(text);
+    return url.searchParams.get('code') || url.searchParams.get('t') || text;
+  } catch(e){ return text; } // pas une URL : on utilise le texte scanné tel quel (code externe)
+}
+
+function processScan(rawText){
+  const msg = document.getElementById('scanMsg');
+  const candidate = (rawText || '').trim();
+  if (!candidate){
+    msg.textContent = 'QR code non reconnu.'; msg.className = 'err'; return;
+  }
+  msg.textContent = 'Vérification...'; msg.className = '';
+  callApi('matchQrCode', {text: extractCandidateCode(candidate)}).then(res=>{
+    if (res && res.ok){
+      const role = res.role;
+      saveGrant(role);
+      msg.textContent = 'Accès validé, ouverture du formulaire…'; msg.className = 'ok';
+      stopScanner();
+      setTimeout(()=>{ window.location.href = destinationFor(role); }, 400);
+    } else {
+      msg.textContent = (res && res.error) || 'Ce QR code ne correspond à aucun accès actif.';
+      msg.className = 'err';
+    }
+  }).catch(()=>{ msg.textContent = 'Impossible de vérifier le QR code (hors connexion ?).'; msg.className = 'err'; });
+}
+
+function toggleScanner(){
+  if (scannerActive){ stopScanner(); return; }
+  startScanner();
+}
+function startScanner(){
+  const btn = document.getElementById('scanToggle');
+  html5QrCode = new Html5Qrcode('reader');
+  Html5Qrcode.getCameras().then(cameras=>{
+    const camId = cameras && cameras.length ? (cameras.find(c=>/back|arrière|rear/i.test(c.label))||cameras[cameras.length-1]).id : null;
+    const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+    const started = camId
+      ? html5QrCode.start(camId, config, onScanDecoded)
+      : html5QrCode.start({ facingMode: 'environment' }, config, onScanDecoded);
+    started.then(()=>{ scannerActive = true; btn.textContent = 'Arrêter la caméra'; })
+      .catch(()=>{ document.getElementById('scanMsg').textContent = 'Impossible d\'accéder à la caméra.'; document.getElementById('scanMsg').className='err'; });
+  }).catch(()=>{ document.getElementById('scanMsg').textContent = 'Aucune caméra disponible sur cet appareil.'; document.getElementById('scanMsg').className='err'; });
+}
+function stopScanner(){
+  if (html5QrCode && scannerActive){
+    html5QrCode.stop().then(()=>html5QrCode.clear()).catch(()=>{});
+  }
+  scannerActive = false;
+  document.getElementById('scanToggle').textContent = 'Activer la caméra';
+}
+let lastDecoded = '', lastDecodedAt = 0;
+function onScanDecoded(decodedText){
+  const now = Date.now();
+  if (decodedText === lastDecoded && (now - lastDecodedAt) < 4000) return; // évite les doublons rafale
+  lastDecoded = decodedText; lastDecodedAt = now;
+  processScan(decodedText);
+}
+
+// ---- Au chargement : reprise automatique si un accès est déjà valide ----
+(function(){
+  const g = loadGrant();
+  if (grantStillValid(g)){
+    document.getElementById('root').style.display = 'none';
+    document.getElementById('redirecting').style.display = 'block';
+    setTimeout(()=>{ window.location.href = destinationFor(g.role); }, 300);
+    return;
+  }
+  // Lien ouvert directement avec des paramètres (ex: caméra native du téléphone) : on traite pareil.
+  if (window.location.search) processScan(window.location.href);
+})();
+</script>
+</body>
+</html>
