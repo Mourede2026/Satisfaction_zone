@@ -5,7 +5,7 @@
 //  application Web Apps Script (Déployer > Gérer les déploiements),
 //  qui se termine par /exec
 // ============================================================
-const API_URL = "https://script.google.com/macros/s/AKfycbxJfaWQ1kbD4Iv31Ak_wQk2kMPOoU0HjX24elJsGxI_DYwrRlo8iywi1dzXeQ0QLweu3g/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzX2WIjNHOUxHWl8sVU79-nsg1GDMfZPcbHjPX0t5wJynsES5RO6iH1Zg1sHewJ3J-zKA/exec";
 
 /**
  * Appelle l'API Apps Script en JSON.
