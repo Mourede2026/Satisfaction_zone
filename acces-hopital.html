@@ -99,7 +99,7 @@ function doLogin(){
     if (!res || !res.ok){ err.textContent = (res && res.error) || 'Connexion impossible.'; return; }
     sessionStorage.setItem('sz_admin_session', JSON.stringify({ token: res.token, account: res.account }));
     window.location.href = 'admin.html';
-  }).catch(()=>{ err.textContent = 'Erreur de connexion.'; });
+  }).catch((e)=>{ err.textContent = 'Erreur de connexion : ' + (e && e.message ? e.message : String(e)); });
 }
 
 // ---- Scanner QR (caméra) ----
