@@ -566,8 +566,17 @@ function enterDashboard(){
 (function(){
   const saved = sessionStorage.getItem('sz_admin_session');
   if (!saved){ window.location.href = 'acces.html'; return; }
-  try { session = JSON.parse(saved); enterDashboard(); }
-  catch(e){ window.location.href = 'acces.html'; }
+  try {
+    session = JSON.parse(saved);
+    if (!session || !session.token || !session.account){
+      throw new Error('Session invalide (pas de compte) — reconnexion nécessaire.');
+    }
+    enterDashboard();
+  }
+  catch(e){
+    sessionStorage.removeItem('sz_admin_session');
+    window.location.href = 'acces.html';
+  }
 })();
 
 function toggleTester(){

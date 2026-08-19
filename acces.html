@@ -96,7 +96,7 @@ function doLogin(){
   const err = document.getElementById('loginError');
   err.textContent = 'Connexion...';
   callApi('accountLogin', {username: u}, p).then(res=>{
-    if (!res || !res.ok){ err.textContent = (res && res.error) || 'Connexion impossible.'; return; }
+    if (!res || !res.ok || !res.token || !res.account){ err.textContent = (res && res.error) || 'Connexion impossible (réponse inattendue du serveur).'; return; }
     sessionStorage.setItem('sz_admin_session', JSON.stringify({ token: res.token, account: res.account }));
     window.location.href = 'admin.html';
   }).catch((e)=>{ err.textContent = 'Erreur de connexion : ' + (e && e.message ? e.message : String(e)); });
