@@ -92,7 +92,7 @@ function destinationFor(role){
 // ---- Connexion tableau de bord ----
 function doLogin(){
   const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
+  const p = document.getElementById('loginPass').value.trim();
   const err = document.getElementById('loginError');
   err.textContent = 'Connexion...';
   callApi('accountLogin', {username: u}, p).then(res=>{
