@@ -1,151 +1,677 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<base target="_top">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ets MOUREDE & ASSOCIES</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#0f4c81">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Mourede & Associés">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord — Satisfaction Zones Sanitaires du Bénin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  :root{--brand:#0f4c81}
+  :root{
+    --ink:#12313B; --ink-soft:#3F5C63; --paper:#F6F4EE; --panel:#FFFFFF; --line:#DCD6C8;
+    --gold:#C9A227; --sage:#4F7C6D; --sage-d:#3C6255; --clay:#B5533C; --clay-d:#963F2C;
+    --shadow: 0 1px 2px rgba(18,49,59,.06), 0 8px 24px rgba(18,49,59,.06);
+  }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:radial-gradient(ellipse at top, #eef4fa 0%, #f4f6f8 60%);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:100vh; padding:24px; text-align:center; overflow-x:hidden;
-  }
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
 
-  .diamond{
-    width:110px; height:auto; margin-bottom:8px;
-    animation: blink 2s ease-in-out infinite;
-  }
-  @keyframes blink{
-    0%, 100% { opacity:1; transform:scale(1); filter:drop-shadow(0 0 0 rgba(15,76,129,0)); }
-    50%      { opacity:.5; transform:scale(1.07); filter:drop-shadow(0 0 14px rgba(15,76,129,.45)); }
-  }
+  /* ---------- LOGIN ---------- */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);padding:20px}
+  .login-card{background:var(--panel);border-radius:14px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .login-card .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage-d);font-weight:600}
+  .login-card h1{font-family:'Fraunces',serif;font-size:22px;margin:6px 0 22px;font-weight:600;line-height:1.25}
+  .login-card label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 6px}
+  .login-card input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);font-size:14px;font-family:'Inter',sans-serif}
+  .login-card button{margin-top:22px;width:100%;padding:12px;border-radius:8px;border:none;background:var(--ink);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
+  .login-card button:hover{background:#0A2229}
+  .login-error{color:var(--clay-d);font-size:12.5px;margin-top:10px;min-height:16px}
+  .login-hint{font-size:11.5px;color:var(--ink-soft);margin-top:18px;line-height:1.5}
 
-  .marquee-wrap{
-    width:min(680px, 92vw); overflow:hidden; margin:6px 0 28px;
-    -webkit-mask-image:linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-    mask-image:linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  }
-  .marquee-track{
-    display:flex; width:max-content;
-    animation: marquee 16s linear infinite;
-  }
-  .marquee-track img{ height:56px; margin-right:70px; display:block; }
-  @keyframes marquee{
-    from{ transform:translateX(0); }
-    to  { transform:translateX(-50%); }
-  }
+  /* ---------- APP ---------- */
+  #app{display:none}
+  header.top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:22px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+  .brand{display:flex;flex-direction:column;gap:4px;max-width:760px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage-d);font-weight:600}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:23px;margin:0;letter-spacing:-.01em;line-height:1.25}
+  .session-box{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .session-pill{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--ink-soft)}
+  .session-pill b{color:var(--ink)}
+  .logout-btn{font-size:11.5px;color:var(--clay-d);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0}
+  .updated{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft)}
 
-  .tagline{ color:#6b7280; font-size:.85rem; max-width:520px; margin:0 0 40px; line-height:1.5 }
+  .config-banner{background:#FFF7E0;border:1px solid #E9CE7A;color:#6b5510;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:20px;display:none}
+  .config-banner code{background:#fff;padding:1px 5px;border-radius:4px;border:1px solid #E9CE7A}
 
-  .buttons{ display:flex; flex-direction:column; gap:16px; width:100%; max-width:420px }
-  .btn{
-    display:block; padding:18px 20px; border-radius:14px; font-weight:700; font-size:1.02rem;
-    text-decoration:none; border:none; cursor:pointer; transition:.15s; line-height:1.35;
-  }
-  .btn-primary{ background:var(--brand); color:#fff; box-shadow:0 6px 18px rgba(15,76,129,.28) }
-  .btn-primary:hover{ background:#0c3c68; transform:translateY(-1px) }
-  .btn-disabled{
-    background:#e9edf1; color:#9aa5b1; cursor:not-allowed; position:relative;
-  }
-  .btn-disabled .soon{
-    display:block; font-size:.72rem; font-weight:600; margin-top:4px; color:#b3bcc4;
-  }
+  nav.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+  nav.tabs button{font-family:'Inter',sans-serif;font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);cursor:pointer;transition:.15s}
+  nav.tabs button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  nav.tabs button:hover:not(.active){border-color:var(--ink-soft)}
 
-  footer{ margin-top:48px; font-size:.72rem; color:#b3bcc4 }
+  .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:22px;box-shadow:var(--shadow)}
+  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .field select{width:100%;padding:9px 10px;border-radius:7px;border:1px solid var(--line);background:#fff;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink)}
+  .field select:disabled{color:#7c8e93;background:#EFEBE0;-webkit-text-fill-color:#7c8e93}
+  .lock-note{font-size:10px;color:var(--sage-d);margin-top:4px;font-family:'IBM Plex Mono',monospace}
 
-  .installBanner{
-    position:fixed; left:16px; right:16px; bottom:16px; max-width:480px; margin:0 auto;
-    background:#12313B; color:#fff; border-radius:14px; padding:14px 16px;
-    display:flex; align-items:center; gap:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:20;
+  .kpi-row{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;margin-bottom:22px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+  .kpi .label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .kpi .value{font-family:'Fraunces',serif;font-size:44px;font-weight:600;line-height:1.1;margin-top:6px}
+  .kpi .sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+  .gauge{margin-top:14px;height:10px;border-radius:6px;background:#EDE8D8;overflow:hidden;position:relative}
+  .gauge > i{display:block;height:100%;background:linear-gradient(90deg,var(--clay),var(--gold) 55%,var(--sage));border-radius:6px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:22px}
+  .panel h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 4px;font-weight:600}
+  .panel .threshold-note{font-size:12px;color:var(--ink-soft);margin-bottom:14px;font-family:'IBM Plex Mono',monospace}
+  canvas{max-width:100%}
+
+  table.qtable{width:100%;border-collapse:collapse;font-size:13px}
+  table.qtable th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:8px 6px}
+  table.qtable td{padding:8px 6px;border-bottom:1px solid #EEE9DA}
+  table.qtable td.num{font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap}
+  .bar-cell{display:flex;align-items:center;gap:0}
+  .bar-cell .track{position:relative;flex:1;height:22px;background:#EDE8D8;border-radius:5px;overflow:hidden}
+  .bar-cell .fill{position:absolute;left:0;top:0;height:100%;border-radius:5px 0 0 5px;transition:width .3s}
+  .bar-cell .fill.pos-green{background:var(--sage)}
+  .bar-cell .fill.pos-red{background:var(--clay)}
+  .bar-cell .pct-label{position:absolute;top:0;left:10px;height:100%;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:#fff;z-index:2;text-shadow:0 1px 1px rgba(0,0,0,.25)}
+  .theme-row td{font-weight:600;background:#F6F4EE;padding-top:14px}
+
+  .synth-band{margin-bottom:20px}
+  .synth-band .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .synth-band .head .name{font-weight:600;font-size:15px}
+  .synth-band .head .val{font-family:'IBM Plex Mono',monospace;font-size:14px}
+  .synth-band .track{position:relative;height:34px;background:#EDE8D8;border-radius:8px;overflow:hidden}
+  .synth-band .fill{position:absolute;left:0;top:0;height:100%;border-radius:8px 0 0 8px}
+  .synth-band .fill.pos-green{background:var(--sage)}
+  .synth-band .fill.pos-red{background:var(--clay)}
+  .synth-band .pct-label{position:absolute;top:0;left:14px;height:100%;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.25)}
+  .synth-threshold{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);margin-bottom:18px}
+
+  .socio-group-title{font-weight:700;background:#EFEAD9 !important}
+
+  .state{font-size:13.5px;color:var(--ink-soft);padding:30px 0;text-align:center}
+  footer{margin-top:30px;font-size:11.5px;color:var(--ink-soft);text-align:center}
+  @media (max-width:800px){
+    .filters{grid-template-columns:1fr 1fr}
+    .kpi-row{grid-template-columns:1fr}
   }
-  .installBanner span{ flex:1; font-size:.85rem; line-height:1.4 }
-  .installBanner button{ border:none; border-radius:8px; padding:9px 14px; font-weight:700; font-size:.82rem; cursor:pointer }
-  #installBtn{ background:var(--brand); color:#fff }
-  #installClose{ background:transparent; color:#9aa5b1; padding:4px 6px; font-size:1rem }
 </style>
 </head>
 <body>
 
-  <img class="diamond" src="logo-diamond.png" alt="Ets MOUREDE & ASSOCIES">
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="eyebrow">Accès sécurisé</div>
+    <h1>Tableau de bord — Enquête de satisfaction des usagers des zones sanitaires du Bénin</h1>
+    <form id="loginForm">
+      <label>Identifiant</label>
+      <input type="text" id="loginUser" autocomplete="username" required>
+      <label>Mot de passe</label>
+      <input type="password" id="loginPass" autocomplete="current-password" required>
+      <button type="submit">Se connecter</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+    <div class="login-hint">Chaque compte (commune, zone sanitaire, département, national, administrateur)
+      n'affiche que les données de son niveau de couverture. Les identifiants sont distribués séparément
+      par l'administrateur du dispositif.</div>
+  </div>
+</div>
 
-  <div class="marquee-wrap">
-    <div class="marquee-track">
-      <img src="logo-text.png" alt="Ets MOUREDE & ASSOCIES">
-      <img src="logo-text.png" alt="Ets MOUREDE & ASSOCIES" aria-hidden="true">
+<div id="app">
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Suivi en continu</span>
+      <h1>TABLEAU DE BORD — ENQUÊTE DE SATISFACTION DES USAGERS DES ZONES SANITAIRES DU BENIN</h1>
+    </div>
+    <div class="session-box">
+      <div class="session-pill">Connecté : <b id="sessionLabel">—</b></div>
+      <button class="logout-btn" id="logoutBtn">Se déconnecter</button>
+      <div class="updated" id="updated">—</div>
+    </div>
+  </header>
+
+  <div class="config-banner" id="configBanner">
+    Aucune source de données configurée. Ouvrez <code>index.html</code> et renseignez les URLs CSV
+    publiées (variable <code>CSV_URLS</code> en haut du script) — voir l'onglet <b>Lisez-moi</b> du classeur.
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button data-key="usagers" class="active">Usagers</button>
+    <button data-key="personnels">Personnel de santé</button>
+    <button data-key="cogecs">Membres COGECS</button>
+    <button data-key="synthese">Synthèse globale</button>
+  </nav>
+
+  <div class="filters">
+    <div class="field"><label>Département</label><select id="f-departement"><option value="">Tous</option></select></div>
+    <div class="field"><label>Zone sanitaire</label><select id="f-zone"><option value="">Toutes</option></select></div>
+    <div class="field"><label>Commune</label><select id="f-commune"><option value="">Toutes</option></select></div>
+    <div class="field"><label>Formation sanitaire</label><select id="f-structure"><option value="">Toutes</option></select></div>
+  </div>
+
+  <!-- ============ VUE PAR CIBLE ============ -->
+  <div id="targetView">
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="label">Indice global de satisfaction</div>
+        <div class="value" id="kpi-global">—</div>
+        <div class="gauge"><i id="kpi-gauge" style="width:0%"></i></div>
+        <div class="sub" id="kpi-sub">selon la sélection active — sert de seuil de satisfaction</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Réponses prises en compte</div>
+        <div class="value" id="kpi-n">—</div>
+        <div class="sub">sur cette combinaison de filtres</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Thème le plus fragile</div>
+        <div class="value" id="kpi-worst" style="font-size:20px;line-height:1.3">—</div>
+        <div class="sub" id="kpi-worst-val">—</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Satisfaction par thème</h2>
+      <div class="threshold-note" id="chartThresholdNote">Seuil = moyenne de tous les thèmes de la cible.
+        Vert = au moins égal au seuil · Rouge = en dessous du seuil.</div>
+      <canvas id="themeChart" height="140"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>Détail question par question</h2>
+      <table class="qtable">
+        <thead><tr><th style="width:55%">Question</th><th style="width:33%">% de satisfaction</th><th class="num">n</th></tr></thead>
+        <tbody id="qbody"><tr><td colspan="3" class="state">Chargement des données…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel" id="socioPanel">
+      <h2>Caractéristiques socio-démographiques des enquêtés</h2>
+      <table class="qtable">
+        <thead><tr><th style="width:45%">Variable / Modalité</th><th class="num" style="width:20%">Effectif</th><th class="num" style="width:20%">Pourcentage</th></tr></thead>
+        <tbody id="socioBody"><tr><td colspan="3" class="state">Chargement…</td></tr></tbody>
+      </table>
     </div>
   </div>
 
-  <p class="tagline">Étude – Consultation – Diverses prestations de service – Commerce Général –
-    Fourniture – Informatique – Matériel et Fourniture de bureau</p>
-
-  <div class="buttons">
-    <a class="btn btn-primary" href="acces.html">Satisfaction des usagers des zones sanitaires</a>
-    <a class="btn btn-primary" href="acces-hopital.html">Satisfaction des usagers des hôpitaux</a>
+  <!-- ============ VUE SYNTHÈSE ============ -->
+  <div id="syntheseView" style="display:none">
+    <div class="panel">
+      <h2>Satisfaction globale — les 3 cibles</h2>
+      <div class="synth-threshold" id="synthThreshold">Seuil = moyenne des indices globaux des 3 cibles, sur la sélection active.</div>
+      <div id="synthBands"><div class="state">Chargement des données…</div></div>
+    </div>
   </div>
 
-  <footer>© Ets MOUREDE &amp; ASSOCIES<br>RCCM : RB/ODH/10-A-028     IFU : 3 2010 0030 3210<br>Tél : +229 01 97 51 81 22 – 01 97 34 73 26</footer>
-
-  <div id="installBanner" class="installBanner" style="display:none">
-    <span id="installText">📲 Installez l'application pour un accès plus rapide.</span>
-    <button id="installBtn">Installer</button>
-    <button id="installClose" aria-label="Fermer">✕</button>
-  </div>
+  <footer>Données collectées en continu · actualisation automatique chaque minute</footer>
+</div>
+</div>
 
 <script>
-// ---- Installation automatique de l'application (PWA) ----
-let deferredInstallPrompt = null;
+// ------------------------------------------------------------------
+// 1) À RENSEIGNER : les URLs CSV publiées de chaque onglet T_ (Fichier > Partager >
+//    Publier sur le web > onglet concerné > format csv). Voir l'onglet "Lisez-moi"
+//    du classeur Google Sheets pour la marche à suivre complète.
+// ------------------------------------------------------------------
+const CSV_URLS = {
+  usagers:    "",  // ex: https://docs.google.com/spreadsheets/d/XXXX/pub?gid=111&single=true&output=csv
+  personnels: "",
+  cogecs:     "",
+};
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  showInstallBanner();
-  // tentative de déclenchement automatique de l'invite native (Chrome/Edge/Android)
-  setTimeout(() => { if (deferredInstallPrompt) deferredInstallPrompt.prompt(); }, 900);
-});
+const REFRESH_MS = 60 * 1000; // actualisation automatique chaque minute
 
-function showInstallBanner(){
-  document.getElementById('installBanner').style.display = 'flex';
+// Structure des thèmes/questions/variables socio-démo (générée automatiquement)
+const CONFIG = {"usagers": {"commune": 1, "structure": 3, "departement": 71, "zone": 72, "themes": [{"theme": "1. Accueil et orientation", "questions": [{"label": "Le personnel m’a accueilli avec courtoisie.", "col": 6}, {"label": "J’ai été bien orienté(e) dès mon arrivée.", "col": 7}, {"label": "Le temps d’attente à l’accueil était raisonnable.", "col": 8}, {"label": "Je suis globalement satisfait(e) de l’accueil.", "col": 9}]}, {"theme": "2. Information et communication", "questions": [{"label": "Les explications sur mon état de santé étaient claires.", "col": 10}, {"label": "J’ai été informé(e) des soins à recevoir avant leur réalisation.", "col": 11}, {"label": "Le personnel m’a informé(e) sur les effets secondaires possibles.", "col": 12}, {"label": "J’ai été informé(e) de mes droits en tant que patient.", "col": 13}, {"label": "J’ai été informé(e) que je peux désigner une personne de confiance.", "col": 14}, {"label": "J’ai été informé(e) que je pouvais refuser un traitement ou un acte médical.", "col": 15}, {"label": "Le personnel m’a bien expliqué comment utiliser les médicaments.", "col": 16}]}, {"theme": "3. Qualité de l’examen et de l’écoute", "questions": [{"label": "Le personnel a pris le temps nécessaire pour m’examiner.", "col": 20}, {"label": "Je me suis senti(e) écouté(e) et pris(e) en compte.", "col": 21}, {"label": "Je me suis senti(e) à l’aise pour parler librement avec le personnel.", "col": 22}, {"label": "J’ai communiqué toutes les informations utiles sur mon état de santé.", "col": 23}]}, {"theme": "4. Soins et continuité", "questions": [{"label": "J’ai reçu les soins dont j’avais besoin.", "col": 24}, {"label": "J’ai bénéficié d’un suivi ou d’une continuité après la première consultation.", "col": 25}, {"label": "J’ai bénéficié d’une visite à domicile par un Relais Communautaire.", "col": 26}, {"label": "La visite à domicile m’a permis de mieux suivre les recommandations.", "col": 27}, {"label": "Les soins reçus ont amélioré mon état de santé.", "col": 28}, {"label": "Les prestations ont été adaptées à mon problème.", "col": 29}, {"label": "J’ai été satisfait(e) des résultats obtenus.", "col": 30}]}, {"theme": "5. Respect, intimité et confidentialité", "questions": [{"label": "Mon intimité a été respectée pendant les soins.", "col": 31}, {"label": "Mes informations médicales ont été gardées confidentielles.", "col": 32}, {"label": "Les soins ont été réalisés dans un espace approprié.", "col": 33}, {"label": "Je me suis senti(e) en sécurité pendant les soins.", "col": 34}]}, {"theme": "6. Accessibilité financière et médicaments", "questions": [{"label": "Les coûts des soins sont abordables.", "col": 35}, {"label": "Les tarifs m’ont été clairement expliqués.", "col": 36}, {"label": "Je n’ai pas payé de frais non prévus ou non justifiés.", "col": 37}, {"label": "Le coût des soins correspond à la qualité reçue.", "col": 38}, {"label": "Les médicaments prescrits étaient disponibles sur place.", "col": 39}, {"label": "Je n’ai pas eu à acheter des médicaments ailleurs.", "col": 40}]}, {"theme": "7. Environnement et hygiène", "questions": [{"label": "Le centre est propre et bien entretenu.", "col": 42}, {"label": "Les locaux sont confortables pour les patients.", "col": 43}, {"label": "Je me suis senti(e) en sécurité dans l’environnement du centre.", "col": 44}, {"label": "Les toilettes sont propres et accessibles.", "col": 45}, {"label": "J’ai eu confiance dans les mesures d’hygiène et de sécurité des soins.", "col": 46}, {"label": "Le matériel utilisé semblait propre et sécurisé.", "col": 47}, {"label": "Je n’ai pas observé de pratiques risquées ou inquiétantes.", "col": 48}]}, {"theme": "8. Équité, respect et compétence du personnel", "questions": [{"label": "J’ai été traité(e) équitablement, sans discrimination.", "col": 49}, {"label": "Le personnel a respecté mes croyances ou préférences personnelles.", "col": 50}, {"label": "Je n’ai pas ressenti d’injustice dans ma prise en charge.", "col": 51}, {"label": "J’ai été pris(e) en charge par le Major ou la sage-femme.", "col": 52}, {"label": "Le personnel semblait compétent et bien formé.", "col": 53}, {"label": "Le personnel était suffisant pour répondre à la demande des patients.", "col": 54}, {"label": "Le personnel était présent aux heures prévues.", "col": 55}, {"label": "J’ai pu refuser d’être pris(e) en charge par un professionnel si j’avais des doutes.", "col": 56}]}, {"theme": "9. Transparence et pratiques abusives", "questions": [{"label": "Aucun médicament n’a été vendu en dehors de la pharmacie du centre.", "col": 57}, {"label": "Je n’ai pas été orienté(e) vers une structure privée sans justification médicale.", "col": 58}, {"label": "Aucun vol de produits ou matériels n’a été constaté ou entendu.", "col": 59}, {"label": "Aucun cadeau ou somme d’argent ne m’a été demandé en dehors des frais officiels.", "col": 60}, {"label": "Je sais comment signaler un préjudice ou demander réparation.", "col": 61}]}, {"theme": "10. Rapidité et réactivité de la prise en charge", "questions": [{"label": "Le temps d’attente avant la consultation était raisonnable.", "col": 62}, {"label": "Les soins ont été administrés rapidement après mon arrivée.", "col": 63}, {"label": "Le personnel a été réactif en cas d’urgence.", "col": 64}]}, {"theme": "11. Vaccination (usagers avec enfant de moins de 5 ans)", "questions": [{"label": "J’ai reçu une explication sur l’importance de la vaccination.", "col": 17}, {"label": "J’ai reçu une information sur les effets secondaires possibles.", "col": 18}, {"label": "J’ai reçu une information sur la conduite à tenir en cas d’effet secondaire.", "col": 19}, {"label": "La carte vaccinale m’a été remise gratuitement.", "col": 41}, {"label": "Le temps d’attente entre mon arrivée et la vaccination de l’enfant était raisonnable.", "col": 65}]}], "socio": [{"variable": "Sexe", "col": 68}, {"variable": "Tranche d'âge", "col": 67}, {"variable": "Niveau de scolarité", "col": 69}, {"variable": "Profession", "col": 70}]}, "personnels": {"commune": 1, "structure": 3, "departement": 57, "zone": 58, "themes": [{"theme": "Ressources matérielles et infrastructures", "questions": [{"label": "Les équipements nécessaires à l’exercice de vos fonctions sont disponibles en quantité suffisante.", "col": 8}, {"label": "Les infrastructures de votre centre de santé sont adaptées à une prestation de qualité.", "col": 9}, {"label": "Vous disposez des consommables médicaux requis pour assurer les soins courants.", "col": 10}]}, {"theme": "Organisation du travail et charge professionnelle", "questions": [{"label": "La répartition des tâches est équitable entre les membres du personnel.", "col": 11}, {"label": "Vous êtes régulièrement sollicité(e) pour des activités non médicales (réunions, etc.).", "col": 12}, {"label": "Le volume de travail quotidien est compatible avec une prise en charge de qualité.", "col": 13}]}, {"theme": "Valorisation, reconnaissance et perspectives professionnelles", "questions": [{"label": "Vous vous sentez valorisé(e) dans votre rôle au sein du centre de santé.", "col": 14}, {"label": "Vous avez des perspectives d’évolution professionnelle dans la zone sanitaire.", "col": 15}, {"label": "Vous êtes satisfait(e) de la reconnaissance institutionnelle accordée à votre travail.", "col": 16}]}, {"theme": "Relations interpersonnelles et climat social", "questions": [{"label": "Les relations entre collègues sont basées sur le respect et la coopération.", "col": 17}, {"label": "Vous pouvez compter sur le soutien de vos collègues en cas de difficulté professionnelle.", "col": 18}, {"label": "Les conflits internes sont gérés de manière constructive.", "col": 19}]}, {"theme": "Protocoles, directives et communication institutionnelle", "questions": [{"label": "Les protocoles techniques sont facilement accessibles dans votre centre.", "col": 20}, {"label": "Les directives du Bureau de Zone Sanitaire sont claires et bien communiquées.", "col": 21}, {"label": "Vous êtes informé(e) en temps utile des décisions qui vous concernent.", "col": 22}]}, {"theme": "Compétences techniques et fiabilité de l’équipe", "questions": [{"label": "Vos collègues maîtrisent les gestes techniques requis pour leur fonction.", "col": 23}, {"label": "Vous avez confiance dans la qualité du travail accompli par votre équipe.", "col": 24}, {"label": "Les erreurs professionnelles sont rares dans votre environnement de travail.", "col": 25}]}, {"theme": "Supervision, encadrement et formation", "questions": [{"label": "Vous bénéficiez de supervisions régulières et utiles.", "col": 26}, {"label": "Les encadreurs zonaux sont disponibles pour répondre à vos besoins techniques.", "col": 27}, {"label": "Les supervisions contribuent à améliorer vos compétences professionnelles.", "col": 28}, {"label": "Les décisions du Bureau de Zone Sanitaire sont perçues comme justes.", "col": 29}, {"label": "Les affectations du personnel sont faites de manière équitable et transparente.", "col": 30}, {"label": "Les formations sont attribuées selon des critères clairs et objectifs.", "col": 31}]}, {"theme": "Information et charte des droits des patients", "questions": [{"label": "Vous avez accès à des outils pour sensibiliser les patients à leurs droits et devoirs.", "col": 32}, {"label": "Vous avez été informé(e) de l’existence de la Charte des droits et devoirs des patients.", "col": 33}, {"label": "Vous avez lu ou reçu une formation sur son contenu.", "col": 34}, {"label": "La Charte est affichée dans votre centre de santé.", "col": 35}, {"label": "Vous vous sentez suffisamment outillé(e) pour appliquer ses principes.", "col": 36}, {"label": "Selon vous, les patients sont informés de leurs droits et devoirs.", "col": 37}, {"label": "Vous avez reçu des directives claires sur l’application de la Charte.", "col": 38}, {"label": "Votre hiérarchie veille à ce que les patients soient informés de leurs droits.", "col": 39}]}, {"theme": "Pratiques éthiques et relation patient", "questions": [{"label": "Vous veillez à obtenir le consentement libre et éclairé du patient avant tout acte médical.", "col": 40}, {"label": "Vous respectez la confidentialité des informations médicales.", "col": 41}, {"label": "Vous adaptez votre comportement pour respecter la dignité et les croyances du patient.", "col": 42}, {"label": "Vous contribuez à une prise en charge équitable, sans discrimination.", "col": 43}, {"label": "Votre hiérarchie vous encourage à respecter les droits des patients.", "col": 44}]}, {"theme": "Gouvernance et collaboration avec le COGECS", "questions": [{"label": "Le COGECS participe activement au fonctionnement du centre de santé.", "col": 45}, {"label": "Des réunions sont régulièrement tenues entre le personnel et le COGECS.", "col": 46}, {"label": "La collaboration entre les agents de santé et les membres du COGECS.", "col": 47}, {"label": "Le COGECS contribue à la gestion des conflits entre les patients et le personnel de santé.", "col": 48}, {"label": "Le COGECS mène des activités de sensibilisation dans la communauté (droits des patients, vaccination, hygiène, etc.).", "col": 49}]}], "socio": [{"variable": "Sexe", "col": 6}, {"variable": "Tranche d'âge", "col": 5}, {"variable": "Niveau de scolarité", "col": 7}]}, "cogecs": {"commune": 1, "structure": 3, "departement": 21, "zone": 22, "themes": [{"theme": "1. Gouvernance et gestion du centre de santé", "questions": [{"label": "Le COGECS accomplit efficacement ses missions.", "col": 4}, {"label": "Les réunions statutaires du COGECS sont tenues régulièrement.", "col": 5}, {"label": "Les inventaires physiques (médicaments, équipements) sont réalisés régulièrement.", "col": 6}, {"label": "Les rapports d’activités sont transmis à la coordination de zone sanitaire.", "col": 7}, {"label": "Le COGECS est transparent dans la gestion des ressources du centre.", "col": 8}, {"label": "La gestion globale du centre de santé par le COGECS est satisfaisante.", "col": 9}]}, {"theme": "2. Collaboration interne avec le personnel soignant", "questions": [{"label": "La collaboration du COGECS avec le personnel soignant du centre est satisfaisante.", "col": 10}, {"label": "Le COGECS est impliqué dans la planification des activités du centre.", "col": 11}, {"label": "Le COGECS est réellement impliqué et lié dans les prises de décision concernant le centre.", "col": 12}, {"label": "Les suggestions du COGECS sont prises en compte par le centre de santé.", "col": 13}]}, {"theme": "3. Relation avec la coordination de zone sanitaire", "questions": [{"label": "Le dialogue entre le COGECS et la coordination de zone sanitaire est de qualité.", "col": 14}, {"label": "Le bureau de coordination est disponible pour écouter et traiter les différends soulevés par le COGECS.", "col": 15}, {"label": "Le COGECS participe à la résolution des plaintes ou conflits des usagers.", "col": 16}]}, {"theme": "4. Capacités et moyens des membres du COGECS", "questions": [{"label": "Les membres du COGECS ont reçu une formation sur leurs rôles et responsabilités.", "col": 17}, {"label": "Les nouveaux membres du COGECS sont systématiquement formés à leur prise de fonction.", "col": 18}, {"label": "Les membres du COGECS disposent d’outils (manuel, guide, fiches) pour exercer leurs missions.", "col": 19}]}], "socio": []}};
+
+// Comptes (identifiant, empreinte SHA-256 de "identifiant:motdepasse", niveau, portée)
+const ACCOUNTS = [{"u": "commune.abomey", "h": "82e73a3bc26ab1266e67ae26a157660b92db721b34b5f2b5c078d30194303f29", "level": "commune", "departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun", "commune": "Abomey", "label": "Commune de Abomey"}, {"u": "commune.abomey-calavi", "h": "9ccc7b5ceb9278196c4bc9e2fd1abfdc06018c91181859806200d3d05f803c8e", "level": "commune", "departement": "Atlantique", "zone": "Abomey-Calavi-So-ava", "commune": "Abomey-Calavi", "label": "Commune de Abomey-Calavi"}, {"u": "commune.adja-ouere", "h": "47aaee09ac655aeaf96d326d267e962d696f8e02780f44aa311f9caf7978912a", "level": "commune", "departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè", "commune": "Adja-Ouèrè", "label": "Commune de Adja-Ouèrè"}, {"u": "commune.adjarra", "h": "bd636c339444304941d0949bd659bbc5819c676ffb17317e43a78245e8bcc3f1", "level": "commune", "departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra", "commune": "Adjarra", "label": "Commune de Adjarra"}, {"u": "commune.adjohoun", "h": "8e3afcec5eb7ad6d39cbb8c3699b1c18a78e89870e966bf59876a0f50c439267", "level": "commune", "departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo", "commune": "Adjohoun", "label": "Commune de Adjohoun"}, {"u": "commune.agbangnizoun", "h": "69a96acc1743b031f70cc426ec13ed881ec5f3bf0fa7a7af175d4b0f235da5f1", "level": "commune", "departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun", "commune": "Agbangnizoun", "label": "Commune de Agbangnizoun"}, {"u": "commune.aguegues", "h": "c19860cacc34da3c8b77692c0fed3a8b30f94ca2da02344a8b7a6edbf068127e", "level": "commune", "departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués", "commune": "Aguegues", "label": "Commune de Aguegues"}, {"u": "commune.akpro-misserete", "h": "0082975f401af7de065e49976f59663d0198f07a0a3ba5f012a219e5ab11a271", "level": "commune", "departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra", "commune": "Akpro-Missereté", "label": "Commune de Akpro-Missereté"}, {"u": "commune.allada", "h": "f2c7f5cd6d7cd8ea40e17a0240b10e6302bab10e98384026f4500daa538e9fed", "level": "commune", "departement": "Atlantique", "zone": "Allada-Toffo-Zè", "commune": "Allada", "label": "Commune de Allada"}, {"u": "commune.aplahoue", "h": "b3db46f6612e7f62a0e50bf8deb2f03be82f89e09a52965685cae4b2b6f614ba", "level": "commune", "departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo", "commune": "Aplahoué", "label": "Commune de Aplahoué"}, {"u": "commune.athieme", "h": "cc09ba0120cae9a00cb8413f906186c745f9ff3d83f1fec1945208a7391960b1", "level": "commune", "departement": "Mono", "zone": "Lokossa-Athiémè", "commune": "Athieme", "label": "Commune de Athieme"}, {"u": "commune.avrankou", "h": "bf969a32b5c0d30a9a67284f4a759ff744794705cab449939f4fc77a5f8b201d", "level": "commune", "departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra", "commune": "Avrankou", "label": "Commune de Avrankou"}, {"u": "commune.banikoara", "h": "eafed6325706ad3b2466ff9ec1f8156aeaee58540b8d1376c7dbc3234a8fb612", "level": "commune", "departement": "Alibori", "zone": "Banikoara", "commune": "Banikoara", "label": "Commune de Banikoara"}, {"u": "commune.bante", "h": "bf64a6ea967d2bed6117f996921f334935ee01bbc92c2310d405b51d4ac6956c", "level": "commune", "departement": "Collines", "zone": "Savalou-Bantè", "commune": "Bante", "label": "Commune de Bante"}, {"u": "commune.bassila", "h": "56e43a56dd21a99d728a069aff5baad953b25a6277ec45b88b28b4f0f2bce1c4", "level": "commune", "departement": "Donga", "zone": "Bassila", "commune": "Bassila", "label": "Commune de Bassila"}, {"u": "commune.bembereke", "h": "37c76e2530af41ae16e31a5cd1422e3f9fd3927a41c5bb2b852b4128a0e3545b", "level": "commune", "departement": "Borgou", "zone": "Bembèrèkè-Sinendé", "commune": "Bembèrèkè", "label": "Commune de Bembèrèkè"}, {"u": "commune.bohicon", "h": "85d6dd4c413544c46e9c19b7121584b86a8ac592f58deae46eb4247b9b927e15", "level": "commune", "departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey", "commune": "Bohicon", "label": "Commune de Bohicon"}, {"u": "commune.bonou", "h": "66e32c5286ffbb01169427d2e098aed5b56877a0010d70b6ddff94aea41e6461", "level": "commune", "departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo", "commune": "Bonou", "label": "Commune de Bonou"}, {"u": "commune.bopa", "h": "67cde2c323b922512e39ea691cb01ba705526e90912352f22811398550f8576a", "level": "commune", "departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa", "commune": "Bopa", "label": "Commune de Bopa"}, {"u": "commune.boukoumbe", "h": "3cf392e368ad27b7dbee91e788c578a5e27e3dbdc712b1bc7cfc3f073234dc3c", "level": "commune", "departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna", "commune": "Boukoumbe", "label": "Commune de Boukoumbe"}, {"u": "commune.cobly", "h": "6d564db2c3d6aff9787de0a4538099e05b72612140406e7469b8dbcbf6f1cc54", "level": "commune", "departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri", "commune": "Cobly", "label": "Commune de Cobly"}, {"u": "commune.come", "h": "21a6abaaad3d0e530ea005f32dfb03a35cb7ff83109886dc511fcf60355871b9", "level": "commune", "departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa", "commune": "Come", "label": "Commune de Come"}, {"u": "commune.copargo", "h": "da0fd4afd5fae4e6d465dcf80430ab4cdca8c794c08f5ba50937101b3a0d581f", "level": "commune", "departement": "Donga", "zone": "Djougou-Ouaké-Copargo", "commune": "Copargo", "label": "Commune de Copargo"}, {"u": "commune.cotonou", "h": "1424133d45678cac495e537fb09009cf166e41d2263b6f1fffc25766a8fa6a96", "level": "commune", "departement": "Littoral", "zone": "Cotonou (selon arrondissement)", "commune": "Cotonou", "label": "Commune de Cotonou"}, {"u": "commune.cove", "h": "d1fdb37ee662e878269da166641257a90df991a9c9b9ad18f8152330f49fcb27", "level": "commune", "departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi", "commune": "Covè", "label": "Commune de Covè"}, {"u": "commune.dangbo", "h": "8e8a2835962425e10654098a3b1b82269856318c52bd3f547de94f039bd77a43", "level": "commune", "departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo", "commune": "Dangbo", "label": "Commune de Dangbo"}, {"u": "commune.dassa", "h": "217e4ba955e8e67d9037414b4561563a453cb679734f54b32edbad49434a8001", "level": "commune", "departement": "Collines", "zone": "Dassa-Glazoué", "commune": "Dassa", "label": "Commune de Dassa"}, {"u": "commune.djakotome", "h": "d68d9ed42d63399b08818e8e9f222b79ba7c94d845bdda1c5ff4b52816353120", "level": "commune", "departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo", "commune": "Djakotome", "label": "Commune de Djakotome"}, {"u": "commune.djidja", "h": "b3b81874649fbbd7295928261957711b73150a4fbc12872495f919ba5cb1179a", "level": "commune", "departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun", "commune": "Djidja", "label": "Commune de Djidja"}, {"u": "commune.djougou", "h": "bcff0f59a128a9d07f8c3d1b21b4cb3db07b86186dd184a627f05ccfb56c0702", "level": "commune", "departement": "Donga", "zone": "Djougou-Ouaké-Copargo", "commune": "Djougou", "label": "Commune de Djougou"}, {"u": "commune.dogbo", "h": "b42ecb9a75dded2c4ea5801b5691c1fd13fd79bf4141cafed713e5a3c4ec716e", "level": "commune", "departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo", "commune": "Dogbo", "label": "Commune de Dogbo"}, {"u": "commune.glazoue", "h": "b47030a4b5acda9da70876fe4d99560d48ab2d2b64b20bbae07c5190e70db46c", "level": "commune", "departement": "Collines", "zone": "Dassa-Glazoué", "commune": "Glazoue", "label": "Commune de Glazoue"}, {"u": "commune.gogounou", "h": "c4d6ee6a21defb4b7137dfcf308e4c76e5fd6f800f634ce87210317f3fab3cae", "level": "commune", "departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana", "commune": "Gogounou", "label": "Commune de Gogounou"}, {"u": "commune.grand-popo", "h": "68d79705fc6a537cf35d01f37ddfdabc4ed3edea2bbed8ab8e13a72d9156ac96", "level": "commune", "departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa", "commune": "Grand-Popo", "label": "Commune de Grand-Popo"}, {"u": "commune.houeyogbe", "h": "fcdcd911da85e660cbde51bab134c360341d1eb9dde8e526e0c23de52b2db3c7", "level": "commune", "departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa", "commune": "Houeyogbe", "label": "Commune de Houeyogbe"}, {"u": "commune.ifangni", "h": "13baeb9e855c8619c9f8fb0f62669300039b64edfe3ec21d5c441b78b6213a8d", "level": "commune", "departement": "Plateau", "zone": "Sakété-Ifangni", "commune": "Ifangni", "label": "Commune de Ifangni"}, {"u": "commune.kalale", "h": "d0130d8faa5cf0ef55a593b3129d31b8bc2cc5162445f278472186a53558c3b3", "level": "commune", "departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè", "commune": "Kalale", "label": "Commune de Kalale"}, {"u": "commune.kandi", "h": "c51b5b9aa915160f86bac765b854511b44107c66dc9248f72480c0693eb1740e", "level": "commune", "departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana", "commune": "Kandi", "label": "Commune de Kandi"}, {"u": "commune.karimama", "h": "31f5988ee4b5adbd145697998528d2ea7d12a47a6078c7ce0aeecaafb5e389d6", "level": "commune", "departement": "Alibori", "zone": "Malanville-Karimama", "commune": "Karimama", "label": "Commune de Karimama"}, {"u": "commune.klouekanme", "h": "4e98f63df583f879b5cfe26caa77e5ca5b286b296a80f45e267d670cdb386004", "level": "commune", "departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo", "commune": "Klouékanmè", "label": "Commune de Klouékanmè"}, {"u": "commune.kouande", "h": "727e16d3932295f1d2861e244d83299549889bbce3fc8582acb1a4bbbe174197", "level": "commune", "departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou", "commune": "Kouande", "label": "Commune de Kouande"}, {"u": "commune.kpomasse", "h": "b78f30ba7897a273bcc7ad765c23f7b8da113c565adb46192fb1c30a3f18b3f2", "level": "commune", "departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito", "commune": "Kpomasse", "label": "Commune de Kpomasse"}, {"u": "commune.kerou", "h": "85da4bab11f0cc4cb707451654453e32e03d95f8ea1bbc0fe69fa41bca58e088", "level": "commune", "departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou", "commune": "Kérou", "label": "Commune de Kérou"}, {"u": "commune.ketou", "h": "3dd48efd6d975809e6ea4ae2fdb9c1e99547313f6d2a35bacd8b384a7a351d2a", "level": "commune", "departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè", "commune": "Kétou", "label": "Commune de Kétou"}, {"u": "commune.lalo", "h": "f39ade1adb0f0a12b0f27c8819c8af02506e8205a6bccfcb1f1fc42aba715e6c", "level": "commune", "departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo", "commune": "Lalo", "label": "Commune de Lalo"}, {"u": "commune.lokossa", "h": "7507aa57de7b1e85ce11bed4a384d84cc149b5efc8b0540c6713274a4fff45af", "level": "commune", "departement": "Mono", "zone": "Lokossa-Athiémè", "commune": "Lokossa", "label": "Commune de Lokossa"}, {"u": "commune.malanville", "h": "ccde329f40c8803d4107eb1c2b438894a8ef79475edc2f0f5866a55168e7b417", "level": "commune", "departement": "Alibori", "zone": "Malanville-Karimama", "commune": "Malanville", "label": "Commune de Malanville"}, {"u": "commune.materi", "h": "440ce3ca21d4e142c324e1e32c97514370ae804f7df9f24bf07b8abd1487973d", "level": "commune", "departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri", "commune": "Matéri", "label": "Commune de Matéri"}, {"u": "commune.n-dali", "h": "023e6387ba852b63ad72289eb03774159d2b67a28455ef8d7e560e87c9d68d9d", "level": "commune", "departement": "Borgou", "zone": "N'Dali-Parakou", "commune": "N'Dali", "label": "Commune de N'Dali"}, {"u": "commune.natitingou", "h": "b73409dbced8040e382bd54653cb3a773e5273988ab1de44381c868c2754cd41", "level": "commune", "departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna", "commune": "Natitingou", "label": "Commune de Natitingou"}, {"u": "commune.nikki", "h": "2530048625640dce9a35eda144f7f6d0eae51fda9679d7e874ea4dbb089caa83", "level": "commune", "departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè", "commune": "Nikki", "label": "Commune de Nikki"}, {"u": "commune.ouake", "h": "5c7c29972454415fecf6e71e378d802ed787cf6d7365d98c243049c24f90251d", "level": "commune", "departement": "Donga", "zone": "Djougou-Ouaké-Copargo", "commune": "Ouake", "label": "Commune de Ouake"}, {"u": "commune.ouesse", "h": "c6249ac98c2344afd374a6c24e91b33ea474493ab7cdb6a3a49244f4d94c0cd8", "level": "commune", "departement": "Collines", "zone": "Savè-Ouèssè", "commune": "Ouesse", "label": "Commune de Ouesse"}, {"u": "commune.ouidah", "h": "52c2d5a1fc6146f8dafc70b14d3841f26a8e0dbea47a91c22b8e5a1e6d8f3bac", "level": "commune", "departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito", "commune": "Ouidah", "label": "Commune de Ouidah"}, {"u": "commune.ouinhi", "h": "3029b6f27c162b228c0407842f00320a903409ec34e463906ef0b96752bf30ab", "level": "commune", "departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi", "commune": "Ouinhi", "label": "Commune de Ouinhi"}, {"u": "commune.parakou", "h": "c4b4e168b540049321cba76c38a1d60af0785ab2af6b0653d80a86841e03397f", "level": "commune", "departement": "Borgou", "zone": "N'Dali-Parakou", "commune": "Parakou", "label": "Commune de Parakou"}, {"u": "commune.pehunco", "h": "b5c8ec6966124ab161e8fc3355e055fc23add9c4a3b0f8b9a7b65155e9920ec1", "level": "commune", "departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou", "commune": "Pehunco", "label": "Commune de Pehunco"}, {"u": "commune.pobe", "h": "369463d13bc05c4f5399d8b4912e78d01aedbdec0b69bf86ecc3e5060cd27d21", "level": "commune", "departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè", "commune": "Pobè", "label": "Commune de Pobè"}, {"u": "commune.porto-novo", "h": "8b4e0147c57da021f62c4930bc1cdf707a7a4a14c80bb281e77ab94e6c382adb", "level": "commune", "departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués", "commune": "Porto-Novo", "label": "Commune de Porto-Novo"}, {"u": "commune.perere", "h": "59559efabcffe9ab9a8a1a460183eee39cfde88ccf6015c1dc8f460e502b4707", "level": "commune", "departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè", "commune": "Pèrèrè", "label": "Commune de Pèrèrè"}, {"u": "commune.sakete", "h": "1511f0b0ec458cf406e8c49c112b10263b0ba62bef1912fa5942cdcf768acebc", "level": "commune", "departement": "Plateau", "zone": "Sakété-Ifangni", "commune": "Sakete", "label": "Commune de Sakete"}, {"u": "commune.savalou", "h": "e6a15d92aa1e1ddf9fa4a68c7727dfbb4c0f6ee4aaf9b042a029fa4a25e53abc", "level": "commune", "departement": "Collines", "zone": "Savalou-Bantè", "commune": "Savalou", "label": "Commune de Savalou"}, {"u": "commune.save", "h": "e4a23eea5c4295bcc219f6f039af3c57f51367e118a996b2e98f9a1e2b10d5a6", "level": "commune", "departement": "Collines", "zone": "Savè-Ouèssè", "commune": "Savè", "label": "Commune de Savè"}, {"u": "commune.segbana", "h": "ed443e38700417929ef058499ed8fe3d33fd2b23968ac8fa1e9ee41da0fb94f3", "level": "commune", "departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana", "commune": "Segbana", "label": "Commune de Segbana"}, {"u": "commune.seme-kpodji", "h": "22cda553b63577581a486f170da142c9e82a92e55e103c9d527c4315ec3f2143", "level": "commune", "departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués", "commune": "Seme-Kpodji", "label": "Commune de Seme-Kpodji"}, {"u": "commune.sinende", "h": "1ea3b6bc61dfeb1a6e72c65c702bee7c145d55a2db2db6c5ea51b1157d5effdc", "level": "commune", "departement": "Borgou", "zone": "Bembèrèkè-Sinendé", "commune": "Sinende", "label": "Commune de Sinende"}, {"u": "commune.so-ava", "h": "a314a7a0a7be2be458341dfda1416d6599ac0db0ae8d494aa36773f6a0cc47ab", "level": "commune", "departement": "Atlantique", "zone": "Abomey-Calavi-So-ava", "commune": "So-Ava", "label": "Commune de So-Ava"}, {"u": "commune.tanguieta", "h": "be13464c77d139e5e169858144bf320d47a346a9722d1130ec96b5a3d2d81a09", "level": "commune", "departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri", "commune": "Tanguieta", "label": "Commune de Tanguieta"}, {"u": "commune.tchaourou", "h": "b25a259c08971eafc7e1649847a1fdfaafb186f0fa200666fc4c235d880696a9", "level": "commune", "departement": "Borgou", "zone": "Tchaourou", "commune": "Tchaourou", "label": "Commune de Tchaourou"}, {"u": "commune.toffo", "h": "e8f522cda3167b036485502d8c4f98b3c3efe4c678568252473296cd69c09a3e", "level": "commune", "departement": "Atlantique", "zone": "Allada-Toffo-Zè", "commune": "Toffo", "label": "Commune de Toffo"}, {"u": "commune.tori-bossito", "h": "8390ea72e90b57dccfa0db907d763c14708431d17a2e93ffd973190142ca4fe4", "level": "commune", "departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito", "commune": "Tori-Bossito", "label": "Commune de Tori-Bossito"}, {"u": "commune.toukountouna", "h": "0e78ade9a57ca2ff2ff88898517cacd716181b980dbbc3e530b9a02ecdaa8a08", "level": "commune", "departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna", "commune": "Toukountouna", "label": "Commune de Toukountouna"}, {"u": "commune.toviklin", "h": "a5e71148f1c46c1b7f7aef04de1ff093c31324a50ce3e30af48f835994170190", "level": "commune", "departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo", "commune": "Toviklin", "label": "Commune de Toviklin"}, {"u": "commune.za-kpota", "h": "86f07f3df78901ea6a759b46d365868ec2ec8e0d9183e8efd1ef553760463d59", "level": "commune", "departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey", "commune": "Za-Kpota", "label": "Commune de Za-Kpota"}, {"u": "commune.zagnanado", "h": "41d64ee5054c859b8f36aaf6c5b0453287838426fc6cf0c7f298b4bb09fba28a", "level": "commune", "departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi", "commune": "Zagnanado", "label": "Commune de Zagnanado"}, {"u": "commune.ze", "h": "29e3b6db9683dedec30ea094dfd2e25613478c129b26bafa77afa65dd3282e41", "level": "commune", "departement": "Atlantique", "zone": "Allada-Toffo-Zè", "commune": "Ze", "label": "Commune de Ze"}, {"u": "commune.zogbodomey", "h": "f2d17d2f0d6ea91c19ecf48e07bcbf8f5d6a30c2db58eedfc200a85cf24c4d6c", "level": "commune", "departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey", "commune": "Zogbodomey", "label": "Commune de Zogbodomey"}, {"u": "zone.abomey-calavi-so-ava", "h": "93aff0044c197be5aec397b98865b002fe632f57b161b519c14502c71467c4d0", "level": "zone", "departement": "Atlantique", "zone": "Abomey-Calavi-So-ava", "commune": "", "label": "Zone sanitaire Abomey-Calavi-So-ava"}, {"u": "zone.adjohoun-bonou-dangbo", "h": "b19194f2b30134091697940fc445563c0037ae2ee3e7050c4334e661a8a8ff4b", "level": "zone", "departement": "Ouémé", "zone": "Adjohoun-Bonou-Dangbo", "commune": "", "label": "Zone sanitaire Adjohoun-Bonou-Dangbo"}, {"u": "zone.akpro-misserete-avrankou-adjarra", "h": "6a7b8bab1a24b8d74524e45a2a304919042be73b72023282a01124fcb5b0ca14", "level": "zone", "departement": "Ouémé", "zone": "Akpro-missérété-Avrankou-Adjarra", "commune": "", "label": "Zone sanitaire Akpro-missérété-Avrankou-Adjarra"}, {"u": "zone.allada-toffo-ze", "h": "896bda3c617196462053f123fa31eab38bec3526b43203d5380b76ac705a2c62", "level": "zone", "departement": "Atlantique", "zone": "Allada-Toffo-Zè", "commune": "", "label": "Zone sanitaire Allada-Toffo-Zè"}, {"u": "zone.aplahoue-djakotomey-dogbo", "h": "60e1049db5f806911494c6d858edf85dc4085aa022b77d39b2d055dbdaf1d2bf", "level": "zone", "departement": "Couffo", "zone": "Aplahoué-Djakotomey-Dogbo", "commune": "", "label": "Zone sanitaire Aplahoué-Djakotomey-Dogbo"}, {"u": "zone.banikoara", "h": "518ef5eba7b8edf42d71f8596f360c97017d8e3f6603aed8d81f56b671b4b64a", "level": "zone", "departement": "Alibori", "zone": "Banikoara", "commune": "", "label": "Zone sanitaire Banikoara"}, {"u": "zone.bassila", "h": "c021fc9d9aaafe7fbb304d00a89fbdacb7b7c470406f91f4d89560c92cc987b3", "level": "zone", "departement": "Donga", "zone": "Bassila", "commune": "", "label": "Zone sanitaire Bassila"}, {"u": "zone.bembereke-sinende", "h": "c3f4df49cd383b154e31c496829dee8e852fceddea2fb9b578d93b2217a089c2", "level": "zone", "departement": "Borgou", "zone": "Bembèrèkè-Sinendé", "commune": "", "label": "Zone sanitaire Bembèrèkè-Sinendé"}, {"u": "zone.bohicon-za-kpota-zogbodomey", "h": "357e25f03c22431981cf6a956e55455267ceb4ea2b8013af9b7eac8be7a8f798", "level": "zone", "departement": "Zou", "zone": "Bohicon-Za-kpota-Zogbodomey", "commune": "", "label": "Zone sanitaire Bohicon-Za-kpota-Zogbodomey"}, {"u": "zone.come-grand-popo-houeyogbe-bopa", "h": "433ae08ebe50d887f8c967bf40ce97fb0b2dc4be3edd1e456969d03059c7035c", "level": "zone", "departement": "Mono", "zone": "Comè-Grand popo-Houèyogbé-Bopa", "commune": "", "label": "Zone sanitaire Comè-Grand popo-Houèyogbé-Bopa"}, {"u": "zone.cotonou-selon-arrondissement", "h": "d6eb20226562a1b447e582b6a3a40f24781215b088bcc555d075f7fd6609b219", "level": "zone", "departement": "Littoral", "zone": "Cotonou (selon arrondissement)", "commune": "", "label": "Zone sanitaire Cotonou (selon arrondissement)"}, {"u": "zone.cove-zagnanado-ouinhi", "h": "bc77af79cc01313839e286c1967c1141416fd2d836f6cdebc8513c5486bcfb8a", "level": "zone", "departement": "Zou", "zone": "Covè-Zagnanado-Ouinhi", "commune": "", "label": "Zone sanitaire Covè-Zagnanado-Ouinhi"}, {"u": "zone.dassa-glazoue", "h": "e1d04e3183e2d5d445b0492642596075628effb9b542c448ae5248d99476cbbd", "level": "zone", "departement": "Collines", "zone": "Dassa-Glazoué", "commune": "", "label": "Zone sanitaire Dassa-Glazoué"}, {"u": "zone.djidja-abomey-agbangnizoun", "h": "6e3bf8ab46965d17faf2f234cc15ce48934e57ed57b517c3a9892382cce6c470", "level": "zone", "departement": "Zou", "zone": "Djidja-Abomey-Agbangnizoun", "commune": "", "label": "Zone sanitaire Djidja-Abomey-Agbangnizoun"}, {"u": "zone.djougou-ouake-copargo", "h": "2d9fc3f7ffef8b3c2bff4390cf10250ad8dfc1746c37e2b5112852e0491e689c", "level": "zone", "departement": "Donga", "zone": "Djougou-Ouaké-Copargo", "commune": "", "label": "Zone sanitaire Djougou-Ouaké-Copargo"}, {"u": "zone.kandi-gogounou-segbana", "h": "836f4983d30441de95457a8273b2bbce665ca0575f94a039788169db6d9e0f80", "level": "zone", "departement": "Alibori", "zone": "Kandi-Gogounou-Ségbana", "commune": "", "label": "Zone sanitaire Kandi-Gogounou-Ségbana"}, {"u": "zone.klouekame-toviklin-lalo", "h": "ec06eb6d05bad5c0924439db67f40373de6a25d0802d71717e6b0c3a8405709c", "level": "zone", "departement": "Couffo", "zone": "Klouékamè-Toviklin-Lalo", "commune": "", "label": "Zone sanitaire Klouékamè-Toviklin-Lalo"}, {"u": "zone.kouande-pehunco-kerou", "h": "d5d089e286f65953f66026bcf9d1d36c226bc5c5591c8aae05ad012bae7c5df6", "level": "zone", "departement": "Atacora", "zone": "Kouandé-Péhunco-Kérou", "commune": "", "label": "Zone sanitaire Kouandé-Péhunco-Kérou"}, {"u": "zone.lokossa-athieme", "h": "326193009399c33d0d9cfdb7a66d79e6f1de7e1a2c36bbe165f150962c35d6fe", "level": "zone", "departement": "Mono", "zone": "Lokossa-Athiémè", "commune": "", "label": "Zone sanitaire Lokossa-Athiémè"}, {"u": "zone.malanville-karimama", "h": "df4fe3eb0c190f3ca440c55ab0ec86be22f95a8e23cb2159195e38f4007fb521", "level": "zone", "departement": "Alibori", "zone": "Malanville-Karimama", "commune": "", "label": "Zone sanitaire Malanville-Karimama"}, {"u": "zone.n-dali-parakou", "h": "5eeca57bf74c07fd49ee1f77c31494f4996a573c2dee8d9e033917fff06a4193", "level": "zone", "departement": "Borgou", "zone": "N'Dali-Parakou", "commune": "", "label": "Zone sanitaire N'Dali-Parakou"}, {"u": "zone.natitingou-boukoumbe-toucountouna", "h": "807e7617d35863cc3c20bdeb35bff16d64167cc8afa22ec51e6581cfa07d946d", "level": "zone", "departement": "Atacora", "zone": "Natitingou-Boukoumbé-Toucountouna", "commune": "", "label": "Zone sanitaire Natitingou-Boukoumbé-Toucountouna"}, {"u": "zone.nikki-kalale-perere", "h": "47c490fde39da6c1390adcd9e05f8644f5fc8f642394384ee431f67485b1395a", "level": "zone", "departement": "Borgou", "zone": "Nikki-Kalalé-Pèrèrè", "commune": "", "label": "Zone sanitaire Nikki-Kalalé-Pèrèrè"}, {"u": "zone.ouidah-kpomasse-tori-bossito", "h": "f77215277c860c9d05dcbc9d62ef530ddfe75527f358f71a1608c17ab615fe0c", "level": "zone", "departement": "Atlantique", "zone": "Ouidah-Kpomassè-Tori-Bossito", "commune": "", "label": "Zone sanitaire Ouidah-Kpomassè-Tori-Bossito"}, {"u": "zone.pobe-ketou-adja-ouere", "h": "8b58c53c982952e1b909e4a56b73447f288c8bcde2337d0f422140e68a8ad9a7", "level": "zone", "departement": "Plateau", "zone": "Pobè-Kétou-Adja-ouèrè", "commune": "", "label": "Zone sanitaire Pobè-Kétou-Adja-ouèrè"}, {"u": "zone.porto-novo-seme-kpodji-aguegues", "h": "67ca23d4dceb857e4cf1bd95ccbcfcb91548e51a4ee6f1cb39df4232a5e90081", "level": "zone", "departement": "Ouémé", "zone": "Porto-Novo-Sèmè-kpodji-Aguégués", "commune": "", "label": "Zone sanitaire Porto-Novo-Sèmè-kpodji-Aguégués"}, {"u": "zone.sakete-ifangni", "h": "a7fe18c0177dee50ff5eca51882a3f22f448e04051f8e2272ff4d4f916aee147", "level": "zone", "departement": "Plateau", "zone": "Sakété-Ifangni", "commune": "", "label": "Zone sanitaire Sakété-Ifangni"}, {"u": "zone.savalou-bante", "h": "7a12f2642b7a9a2b4e2e02a69284701a00a754a0075e37bebd51b232f1a7ea7d", "level": "zone", "departement": "Collines", "zone": "Savalou-Bantè", "commune": "", "label": "Zone sanitaire Savalou-Bantè"}, {"u": "zone.save-ouesse", "h": "dc271f7e793e58a29dd733ec52d1ef2018ee6e948a9ccca35bb93edd8be4fcbb", "level": "zone", "departement": "Collines", "zone": "Savè-Ouèssè", "commune": "", "label": "Zone sanitaire Savè-Ouèssè"}, {"u": "zone.tanguieta-cobly-materi", "h": "3a32d6e68e9bfda67f79f9a366fc1dd8abe17a9eb7b501023ee6242871f9b2d5", "level": "zone", "departement": "Atacora", "zone": "Tanguiéta-Cobly-Matéri", "commune": "", "label": "Zone sanitaire Tanguiéta-Cobly-Matéri"}, {"u": "zone.tchaourou", "h": "29402ee46aa9614c852c8220142314727ffede4957f00924d2854f05b75c352d", "level": "zone", "departement": "Borgou", "zone": "Tchaourou", "commune": "", "label": "Zone sanitaire Tchaourou"}, {"u": "dept.alibori", "h": "9315781879a48242554146313ab5d7551424f2060fb32e9fb7b91fb498094b48", "level": "departement", "departement": "Alibori", "zone": "", "commune": "", "label": "Département Alibori"}, {"u": "dept.atacora", "h": "68993e04040c15c214e501d8767fb7ce890697864ebfb7cfc96a387c214501cb", "level": "departement", "departement": "Atacora", "zone": "", "commune": "", "label": "Département Atacora"}, {"u": "dept.atlantique", "h": "97179b1de356910a515e5faadfd32f8fe1f1559e26b6ad053fc60150907c7ec4", "level": "departement", "departement": "Atlantique", "zone": "", "commune": "", "label": "Département Atlantique"}, {"u": "dept.borgou", "h": "cefd14c23754990513a1190b9e14900912832415b9059fd804497d6f5e117716", "level": "departement", "departement": "Borgou", "zone": "", "commune": "", "label": "Département Borgou"}, {"u": "dept.collines", "h": "83d003f5016f88cd6c91787368ef0c6dfbfde92e560de4f1d007c47870d16cf2", "level": "departement", "departement": "Collines", "zone": "", "commune": "", "label": "Département Collines"}, {"u": "dept.couffo", "h": "4fb61224f3a1978aa34fa25b43efb66fd94a74198b17c9d3133aada19c885c79", "level": "departement", "departement": "Couffo", "zone": "", "commune": "", "label": "Département Couffo"}, {"u": "dept.donga", "h": "fd482396087603bd80a6810c1d3e7bbdd155e3e8a38c1fe51a0b296db88f8f87", "level": "departement", "departement": "Donga", "zone": "", "commune": "", "label": "Département Donga"}, {"u": "dept.littoral", "h": "ee950d9b1cdfc4d8b8faef4d5237fd6632bc5a6dfa5467cb782fd08fa1ca512d", "level": "departement", "departement": "Littoral", "zone": "", "commune": "", "label": "Département Littoral"}, {"u": "dept.mono", "h": "d0cf840bb3ce6a1bd318cb852e850eef6811cd10f99b8bf5b3601119773663f7", "level": "departement", "departement": "Mono", "zone": "", "commune": "", "label": "Département Mono"}, {"u": "dept.oueme", "h": "767da30c9bdfd6ac2b34a93b73979b74a36f81927d7fd380d2fcf9e5d42b47d1", "level": "departement", "departement": "Ouémé", "zone": "", "commune": "", "label": "Département Ouémé"}, {"u": "dept.plateau", "h": "99f9b471fb528d9a787a58c40224628814cfca7c7576a951d497f691b3ed2ee5", "level": "departement", "departement": "Plateau", "zone": "", "commune": "", "label": "Département Plateau"}, {"u": "dept.zou", "h": "1b31f34cc96961d1b2bf6113dc84bdfb298152ca61ed658e813b772a15555786", "level": "departement", "departement": "Zou", "zone": "", "commune": "", "label": "Département Zou"}, {"u": "national", "h": "8c8092777e3f52626b12253e4acccce6f2472ceba90db219fb53c7bcccac99dd", "level": "national", "departement": "", "zone": "", "commune": "", "label": "Niveau National"}, {"u": "admin", "h": "9f406a016d50635ba113c8320322d1e41ed519407d8be0ea247ea43a4d581533", "level": "admin", "departement": "", "zone": "", "commune": "", "label": "Administrateur"}];
+
+const LABELS = {usagers:"Usagers", personnels:"Personnel de santé", cogecs:"Membres COGECS"};
+let RAW = {usagers:null, personnels:null, cogecs:null};
+let current = "usagers";
+let session = null;
+let lockedFilters = {departement:null, zone:null, commune:null};
+let refreshTimer = null;
+
+function pct(x){ return (x*100).toFixed(1) + "%"; }
+
+// ------------------------------------------------------------------
+// AUTHENTIFICATION
+// ------------------------------------------------------------------
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-document.getElementById('installBtn').addEventListener('click', async () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  document.getElementById('installBanner').style.display = 'none';
-});
-document.getElementById('installClose').addEventListener('click', () => {
-  document.getElementById('installBanner').style.display = 'none';
-});
-window.addEventListener('appinstalled', () => {
-  document.getElementById('installBanner').style.display = 'none';
+
+async function tryLogin(username, password){
+  const hash = await sha256Hex(username + ":" + password);
+  return ACCOUNTS.find(a => a.u === username && a.h === hash) || null;
+}
+
+function applyScope(acc){
+  lockedFilters = {departement:null, zone:null, commune:null};
+  if (acc.level === 'commune'){
+    lockedFilters.departement = acc.departement;
+    lockedFilters.zone = acc.zone;
+    lockedFilters.commune = acc.commune;
+  } else if (acc.level === 'zone'){
+    lockedFilters.departement = acc.departement;
+    lockedFilters.zone = acc.zone;
+  } else if (acc.level === 'departement'){
+    lockedFilters.departement = acc.departement;
+  }
+  // national / admin : aucune restriction
+  document.getElementById('sessionLabel').textContent = acc.label + " (" + acc.u + ")";
+}
+
+function lockSelect(id, value){
+  const sel = document.getElementById(id);
+  sel.dataset.locked = "1";
+  sel.value = value;
+  sel.disabled = true;
+}
+
+function initSessionUI(){
+  document.getElementById('f-departement').dataset.locked = "";
+  document.getElementById('f-zone').dataset.locked = "";
+  document.getElementById('f-commune').dataset.locked = "";
+  if (lockedFilters.departement) lockSelect('f-departement', lockedFilters.departement);
+  if (lockedFilters.zone) lockSelect('f-zone', lockedFilters.zone);
+  if (lockedFilters.commune) lockSelect('f-commune', lockedFilters.commune);
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const acc = await tryLogin(u, p);
+  if (!acc){
+    document.getElementById('loginError').textContent = "Identifiant ou mot de passe incorrect.";
+    return;
+  }
+  sessionStorage.setItem('sz_session', JSON.stringify(acc));
+  startApp(acc);
 });
 
-// ---- iOS / Safari : pas d'invite automatique possible, on affiche les instructions ----
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  sessionStorage.removeItem('sz_session');
+  location.reload();
+});
+
+function startApp(acc){
+  session = acc;
+  applyScope(acc);
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initSessionUI();
+  boot();
+}
+
+// ------------------------------------------------------------------
+// CHARGEMENT DES DONNÉES
+// ------------------------------------------------------------------
+async function loadSource(key, force){
+  if (RAW[key] && !force) return RAW[key];
+  const url = CSV_URLS[key];
+  if (!url){ document.getElementById('configBanner').style.display='block'; return []; }
+  const res = await fetch(url, {cache:"no-store"});
+  const text = await res.text();
+  const parsed = Papa.parse(text, {skipEmptyLines:true});
+  const rows = parsed.data.slice(1); // enlève l'en-tête
+  RAW[key] = rows;
+  return rows;
+}
+
+function uniqueSortedField(rows, field){
+  const s = new Set();
+  rows.forEach(r => { const v = (r[field]||"").trim(); if (v) s.add(v); });
+  return Array.from(s).sort((a,b)=>a.localeCompare(b,'fr'));
+}
+
+function fillSelect(sel, values, keepValue){
+  if (sel.dataset.locked === "1") return; // ne pas toucher un filtre verrouillé par le compte
+  sel.innerHTML = '<option value="">' + (sel.dataset.allLabel||'Tous') + '</option>';
+  values.forEach(v=>{
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
+  if (keepValue && values.includes(keepValue)) sel.value = keepValue;
+}
+
+function matchesFilters(row, cfg, f){
+  if (f.departement && (row[cfg.departement]||"").trim() !== f.departement) return false;
+  if (f.zone && (row[cfg.zone]||"").trim() !== f.zone) return false;
+  if (f.commune && (row[cfg.commune]||"").trim() !== f.commune) return false;
+  if (f.structure && (row[cfg.structure]||"").trim() !== f.structure) return false;
+  return true;
+}
+
+function currentFilters(){
+  return {
+    departement: lockedFilters.departement || document.getElementById('f-departement').value,
+    zone: lockedFilters.zone || document.getElementById('f-zone').value,
+    commune: lockedFilters.commune || document.getElementById('f-commune').value,
+    structure: document.getElementById('f-structure').value,
+  };
+}
+
+function getNormalizedRows(key, rows){
+  const cfg = CONFIG[key];
+  return rows.map(r => ({
+    departement: (r[cfg.departement]||"").trim(),
+    zone: (r[cfg.zone]||"").trim(),
+    commune: (r[cfg.commune]||"").trim(),
+    structure: (r[cfg.structure]||"").trim(),
+  }));
+}
+
+async function getOptionRows(){
+  if (current === 'synthese'){
+    const all = [];
+    for (const k of ['usagers','personnels','cogecs']){
+      const rows = await loadSource(k);
+      all.push(...getNormalizedRows(k, rows));
+    }
+    return all;
+  }
+  const rows = await loadSource(current);
+  return getNormalizedRows(current, rows);
+}
+
+async function refreshFilterOptions(){
+  const rows = await getOptionRows();
+  const f = currentFilters();
+
+  fillSelect(document.getElementById('f-departement'), uniqueSortedField(rows, 'departement'), f.departement);
+
+  const rowsForZone = f.departement ? rows.filter(r=>r.departement===f.departement) : rows;
+  fillSelect(document.getElementById('f-zone'), uniqueSortedField(rowsForZone, 'zone'), f.zone);
+
+  let rowsForCommune = rows;
+  if (f.departement) rowsForCommune = rowsForCommune.filter(r=>r.departement===f.departement);
+  if (f.zone) rowsForCommune = rowsForCommune.filter(r=>r.zone===f.zone);
+  fillSelect(document.getElementById('f-commune'), uniqueSortedField(rowsForCommune, 'commune'), f.commune);
+
+  let rowsForStructure = rowsForCommune;
+  if (f.commune) rowsForStructure = rowsForStructure.filter(r=>r.commune===f.commune);
+  fillSelect(document.getElementById('f-structure'), uniqueSortedField(rowsForStructure, 'structure'), f.structure);
+}
+
+// ------------------------------------------------------------------
+// CALCULS — THÈMES / QUESTIONS
+// ------------------------------------------------------------------
+function computeStats(rows, cfg, f){
+  const filtered = rows.filter(r => matchesFilters(r, cfg, f));
+  const themeResults = cfg.themes.map(theme => {
+    let sum=0, n=0;
+    const qResults = theme.questions.map(q=>{
+      let qs=0, qn=0;
+      filtered.forEach(r=>{
+        const raw = r[q.col];
+        if (raw!==undefined && raw!=="" && !isNaN(parseFloat(raw))){
+          qs += parseFloat(raw); qn++;
+        }
+      });
+      const avg = qn? qs/qn : null;
+      if (avg!==null){ sum += avg; n++; }
+      return {label:q.label, avg, n:qn};
+    });
+    const themeAvg = n? sum/n : null;
+    return {theme: theme.theme, avg: themeAvg, questions: qResults};
+  });
+  const validThemes = themeResults.filter(t=>t.avg!==null);
+  const globalIdx = validThemes.length ? validThemes.reduce((a,t)=>a+t.avg,0)/validThemes.length : null;
+  return {globalIdx, nResponses: filtered.length, themeResults};
+}
+
+function computeSocio(rows, cfg, f){
+  const filtered = rows.filter(r => matchesFilters(r, cfg, f));
+  return (cfg.socio||[]).map(v=>{
+    const counts = {};
+    let total = 0;
+    filtered.forEach(r=>{
+      const val = (r[v.col]||"").trim();
+      if (val){ counts[val] = (counts[val]||0)+1; total++; }
+    });
+    const modalites = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).map(k=>({
+      modalite:k, effectif:counts[k], pourcentage: total? counts[k]/total : 0
+    }));
+    return {variable: v.variable, total, modalites};
+  });
+}
+
+// ------------------------------------------------------------------
+// RENDU — VUE PAR CIBLE
+// ------------------------------------------------------------------
+let chart;
+function renderChart(themeResults, threshold){
+  const ctx = document.getElementById('themeChart');
+  const labels = themeResults.map(t=>t.theme);
+  const data = themeResults.map(t=> t.avg!==null? +(t.avg*100).toFixed(1) : null);
+  const colors = themeResults.map(t=> t.avg===null ? '#CFCABB' : (t.avg >= threshold ? '#4F7C6D' : '#B5533C'));
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'% satisfaction', data, backgroundColor:colors, borderRadius:4}]},
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          anchor:'end', align:'end', offset:4,
+          color:'#12313B', font:{family:"'IBM Plex Mono',monospace", weight:600, size:11},
+          formatter: v => v!==null ? v+'%' : ''
+        }
+      },
+      scales:{x:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEE9DA'}}, y:{grid:{display:false}}}
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+function barCellHTML(value){
+  if (value===null) return '<div class="bar-cell"><div class="track"></div></div>';
+  const p = Math.max(0, Math.min(100, value*100));
+  return `<div class="bar-cell"><div class="track">
+      <div class="fill pos-green" style="width:${p}%"></div>
+      <div class="pct-label">${pct(value)}</div>
+    </div></div>`;
+}
+
+function renderTable(themeResults, threshold){
+  const tbody = document.getElementById('qbody');
+  tbody.innerHTML = '';
+  themeResults.forEach(theme=>{
+    const themeColorClass = theme.avg===null ? '' : (theme.avg>=threshold ? 'pos-green':'pos-red');
+    const trTheme = document.createElement('tr');
+    trTheme.className = 'theme-row';
+    trTheme.innerHTML = `<td>${theme.theme}</td>
+        <td>${theme.avg!==null? barCellHTMLColored(theme.avg, themeColorClass) : '—'}</td>
+        <td class="num"></td>`;
+    tbody.appendChild(trTheme);
+    theme.questions.forEach(q=>{
+      const cls = q.avg===null? '' : (q.avg>=threshold?'pos-green':'pos-red');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${q.label}</td>
+        <td>${q.avg!==null? barCellHTMLColored(q.avg, cls) : '—'}</td>
+        <td class="num">${q.n}</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function barCellHTMLColored(value, cls){
+  const p = Math.max(0, Math.min(100, value*100));
+  return `<div class="bar-cell"><div class="track">
+      <div class="fill ${cls}" style="width:${p}%"></div>
+      <div class="pct-label">${pct(value)}</div>
+    </div></div>`;
+}
+
+function renderSocio(socioResults){
+  const tbody = document.getElementById('socioBody');
+  tbody.innerHTML = '';
+  if (!socioResults.length){
+    tbody.innerHTML = '<tr><td colspan="3" class="state">Aucune variable socio-démographique disponible pour cette cible.</td></tr>';
+    return;
+  }
+  socioResults.forEach(v=>{
+    const trHead = document.createElement('tr');
+    trHead.innerHTML = `<td class="socio-group-title" colspan="3">${v.variable} (n=${v.total})</td>`;
+    tbody.appendChild(trHead);
+    if (!v.modalites.length){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="3" class="state">Aucune donnée</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    v.modalites.forEach(m=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="padding-left:18px">${m.modalite}</td>
+          <td class="num">${m.effectif}</td>
+          <td class="num">${(m.pourcentage*100).toFixed(1)}%</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function renderKPIs(stats, threshold){
+  document.getElementById('kpi-global').textContent = stats.globalIdx!==null ? pct(stats.globalIdx) : '—';
+  document.getElementById('kpi-gauge').style.width = stats.globalIdx!==null ? (stats.globalIdx*100)+'%' : '0%';
+  document.getElementById('kpi-n').textContent = stats.nResponses;
+  const valid = stats.themeResults.filter(t=>t.avg!==null);
+  if (valid.length){
+    const worst = valid.reduce((a,b)=> a.avg<b.avg? a:b);
+    document.getElementById('kpi-worst').textContent = worst.theme;
+    document.getElementById('kpi-worst-val').textContent = pct(worst.avg) + ' de satisfaction';
+  } else {
+    document.getElementById('kpi-worst').textContent = '—';
+    document.getElementById('kpi-worst-val').textContent = '—';
+  }
+  document.getElementById('chartThresholdNote').textContent =
+    'Seuil = moyenne de tous les thèmes de la cible (' + (stats.globalIdx!==null?pct(stats.globalIdx):'—') + '). Vert = au moins égal au seuil · Rouge = en dessous du seuil.';
+}
+
+async function renderTargetView(){
+  const rows = await loadSource(current);
+  const cfg = CONFIG[current];
+  const f = currentFilters();
+  const stats = computeStats(rows, cfg, f);
+  const threshold = stats.globalIdx!==null ? stats.globalIdx : 0;
+  renderKPIs(stats, threshold);
+  renderChart(stats.themeResults, threshold);
+  renderTable(stats.themeResults, threshold);
+  renderSocio(computeSocio(rows, cfg, f));
+}
+
+// ------------------------------------------------------------------
+// RENDU — VUE SYNTHÈSE
+// ------------------------------------------------------------------
+async function renderSyntheseView(){
+  const f = currentFilters();
+  const keys = ['usagers','personnels','cogecs'];
+  const results = [];
+  for (const k of keys){
+    const rows = await loadSource(k);
+    const stats = computeStats(rows, CONFIG[k], f);
+    results.push({key:k, label:LABELS[k], idx: stats.globalIdx, n: stats.nResponses});
+  }
+  const valid = results.filter(r=>r.idx!==null);
+  const threshold = valid.length ? valid.reduce((a,r)=>a+r.idx,0)/valid.length : null;
+
+  document.getElementById('synthThreshold').textContent = threshold!==null
+    ? 'Seuil = moyenne des indices globaux des 3 cibles sur la sélection active : ' + pct(threshold)
+    : 'Aucune donnée pour la sélection active.';
+
+  const container = document.getElementById('synthBands');
+  container.innerHTML = '';
+  results.forEach(r=>{
+    const div = document.createElement('div');
+    div.className = 'synth-band';
+    if (r.idx===null){
+      div.innerHTML = `<div class="head"><span class="name">${r.label}</span><span class="val">Aucune donnée</span></div>
+        <div class="track"></div>`;
+    } else {
+      const cls = r.idx>=threshold ? 'pos-green' : 'pos-red';
+      const p = Math.max(0, Math.min(100, r.idx*100));
+      div.innerHTML = `
+        <div class="head"><span class="name">${r.label}</span><span class="val">${pct(r.idx)} · n=${r.n}</span></div>
+        <div class="track"><div class="fill ${cls}" style="width:${p}%"></div><div class="pct-label">${pct(r.idx)}</div></div>`;
+    }
+    container.appendChild(div);
+  });
+}
+
+// ------------------------------------------------------------------
+// ORCHESTRATION
+// ------------------------------------------------------------------
+async function render(){
+  if (current === 'synthese'){
+    document.getElementById('targetView').style.display = 'none';
+    document.getElementById('syntheseView').style.display = 'block';
+    await renderSyntheseView();
+  } else {
+    document.getElementById('syntheseView').style.display = 'none';
+    document.getElementById('targetView').style.display = 'block';
+    await renderTargetView();
+  }
+  document.getElementById('updated').textContent = "Dernière actualisation : " + new Date().toLocaleString('fr-FR');
+}
+
+async function onFilterChange(){
+  await refreshFilterOptions();
+  await render();
+}
+
+document.querySelectorAll('#tabs button').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    current = btn.dataset.key;
+    await refreshFilterOptions();
+    await render();
+  });
+});
+
+['f-departement','f-zone','f-commune','f-structure'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{
+    if (id==='f-departement' && !lockedFilters.zone){ document.getElementById('f-zone').value=''; }
+    if ((id==='f-departement'||id==='f-zone') && !lockedFilters.commune){ document.getElementById('f-commune').value=''; }
+    if (id==='f-departement'||id==='f-zone'||id==='f-commune'){ document.getElementById('f-structure').value=''; }
+    onFilterChange();
+  });
+});
+
+async function boot(){
+  await refreshFilterOptions();
+  await render();
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async ()=>{
+    RAW = {usagers:null, personnels:null, cogecs:null}; // force le rechargement des CSV publiés
+    await refreshFilterOptions();
+    await render();
+  }, REFRESH_MS);
+}
+
+// Reprise de session si déjà connecté
 (function(){
-  const ua = navigator.userAgent || '';
-  const isIos = /iphone|ipad|ipod/i.test(ua);
-  const isStandalone = window.navigator.standalone === true;
-  if (isIos && !isStandalone){
-    document.getElementById('installText').textContent =
-      "📲 Pour installer l'application : bouton Partager, puis « Sur l'écran d'accueil ».";
-    document.getElementById('installBtn').style.display = 'none';
-    showInstallBanner();
+  const saved = sessionStorage.getItem('sz_session');
+  if (saved){
+    try { startApp(JSON.parse(saved)); } catch(e){ /* session invalide, on ignore */ }
   }
 })();
 </script>
-
 </body>
 </html>
